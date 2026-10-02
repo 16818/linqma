@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
@@ -31,19 +30,17 @@ export function ProductCard({
   return (
     <div
       className={cn(
-        "group relative bg-white rounded-3xl shadow-soft border border-[#EDE8DF] overflow-hidden transition-all duration-300 hover:shadow-soft-lg hover:-translate-y-1",
+        "group relative bg-white rounded-3xl border border-[#EDE8DF] overflow-hidden shadow-sm",
         className
       )}
     >
-      {/* تصویر محصول */}
-      <div className="relative aspect-[4/3] overflow-hidden bg-cream-dark">
+      {/* تصویر */}
+      <div className="relative w-full h-48 bg-[#EFE9DF] overflow-hidden">
         {imageUrl ? (
-          <Image
+          <img
             src={imageUrl}
             alt={name}
-            fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-            sizes="(max-width: 768px) 100vw, 33vw"
+            className="w-full h-full object-cover"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-navy/30 text-sm">
@@ -51,35 +48,31 @@ export function ProductCard({
           </div>
         )}
 
-        {/* بج */}
         {badge && (
           <div className="absolute top-3 right-3">
             <Badge variant="crown" className="gap-1 px-2.5 py-1 text-[11px]">
-              <span className="text-sm">👑</span>
-              {badge}
+              👑 {badge}
             </Badge>
           </div>
         )}
       </div>
 
-      {/* محتوای کارت */}
+      {/* محتوا */}
       <div className="p-4 space-y-2">
-        <h3 className="font-bold text-navy text-base leading-tight line-clamp-1">
-          {name}
-        </h3>
+        <h3 className="font-bold text-[#0F172A] text-base">{name}</h3>
 
         {description && (
-          <p className="text-sm text-navy/60 line-clamp-2 leading-relaxed">
+          <p className="text-sm text-[#0F172A]/60 leading-relaxed">
             {description}
           </p>
         )}
 
         {ingredients.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 pt-1">
-            {ingredients.slice(0, 4).map((item) => (
+          <div className="flex flex-wrap gap-1.5">
+            {ingredients.map((item) => (
               <span
                 key={item}
-                className="text-[11px] text-navy/50 bg-cream-dark px-2 py-0.5 rounded-full"
+                className="text-[11px] text-[#0F172A]/50 bg-[#EFE9DF] px-2 py-0.5 rounded-full"
               >
                 {item}
               </span>
@@ -89,16 +82,16 @@ export function ProductCard({
 
         <div className="flex items-center justify-between pt-2">
           <div className="flex items-baseline gap-1">
-            <span className="text-lg font-bold text-gold">
+            <span className="text-lg font-bold text-[#D4AF37]">
               {price.toLocaleString("fa-IR")}
             </span>
-            <span className="text-xs text-navy/50">تومان</span>
+            <span className="text-xs text-[#0F172A]/50">تومان</span>
           </div>
 
           {onAdd && (
             <button
               onClick={() => onAdd(id)}
-              className="w-9 h-9 rounded-full bg-gold text-navy flex items-center justify-center shadow-soft hover:bg-gold-dark transition-colors"
+              className="w-9 h-9 rounded-full bg-[#D4AF37] text-[#0F172A] flex items-center justify-center hover:opacity-90"
             >
               <Plus className="w-5 h-5" strokeWidth={2.5} />
             </button>

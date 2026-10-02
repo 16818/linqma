@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { BusinessHeader } from "@/components/business/BusinessHeader";
 import { CategoryTabs } from "@/components/business/CategoryTabs";
 import { ProductCard } from "@/components/business/ProductCard";
+import { FloatingCart } from "@/components/business/FloatingCart";
 
 const sampleBusiness = {
   name: "کافه لینقما",
@@ -55,16 +57,70 @@ const sampleProducts = [
   },
 ];
 
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  imageUrl?: string;
+}
+
 export default function BusinessPage() {
+  const router = useRouter();
+  const params = useParams();
+  const slug = params.slug as string;
+
   const [activeCategory, setActiveCategory] = useState("all");
+  const [cart, setCart] = useState<CartItem[]>([]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(`linqma-cart-${slug}`);
+    if (saved) setCart(JSON.parse(saved));
+  }, [slug]);
+
+  useEffect(() => {
+    localStorage.setItem(`linqma-cart-${slug}`, JSON.stringify(cart));
+  }, [cart, slug]);
+
+  const addToCart = (productId: string) => {
+    const product = sampleProducts.find((p) => p.id === productId);
+    if (!product) return;
+
+    setCart((prev) => {
+      const existing = prev.find((item) => item.id === productId);
+      if (existing) {
+        return prev.map((item) =>
+          item.id === productId
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [
+        ...prev,
+        {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          quantity: 1,
+          imageUrl: product.imageUrl,
+        },
+      ];
+    });
+  };
 
   const filteredProducts =
     activeCategory === "all"
       ? sampleProducts
       : sampleProducts.filter((p) => p.categoryId === activeCategory);
 
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const totalPrice = cart.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+
   return (
-    <div className="min-h-screen bg-cream font-vazir pb-24">
+    <div className="min-h-screen bg-cream font-vazir pb-28">
       <BusinessHeader {...sampleBusiness} />
 
       <CategoryTabs
@@ -79,11 +135,17 @@ export default function BusinessPage() {
             <ProductCard
               key={product.id}
               {...product}
-              onAdd={(id) => console.log("اضافه شد:", id)}
+              onAdd={addToCart}
             />
           ))}
         </div>
       </div>
+
+      <FloatingCart
+        itemCount={totalItems}
+        totalPrice={totalPrice}
+        onClick={() => router.push(`/business/${slug}/order`)}
+      />
     </div>
   );
 }
