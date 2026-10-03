@@ -1,84 +1,43 @@
-"use client";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { ProductsClient } from "./ProductsClient";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+export default async function ProductsPage() {
+  const supabase = await createClient();
 
-const sampleProducts = [
-  {
-    id: "1",
-    name: "لاته سلطنتی",
-    price: 88000,
-    category: "نوشیدنی گرم",
-    isActive: true,
-    badge: "ویژه",
-  },
-  {
-    id: "2",
-    name: "کراسان بادام",
-    price: 128000,
-    category: "دسر",
-    isActive: true,
-    badge: "محبوب",
-  },
-];
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-export default function ProductsPage() {
-  const [products] = useState(sampleProducts);
+  if (!user) redirect("/login");
+
+  const { data: business } = await supabase
+    .from("businesses")
+    .select("id")
+    .eq("owner_id", user.id)
+    .maybeSingle();
+
+  if (!business) {
+    redirect("/dashboard/onboarding");
+  }
+
+  const { data: products } = await supabase
+    .from("products")
+    .select("*, categories(name)")
+    .eq("business_id", business.id)
+    .order("sort_order");
+
+  const { data: categories } = await supabase
+    .from("categories")
+    .select("id, name")
+    .eq("business_id", business.id)
+    .eq("is_active", true);
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-navy">محصولات</h1>
-          <p className="text-navy/60 text-sm mt-1">
-            {products.length} محصول ثبت شده
-          </p>
-        </div>
-        <Button variant="gold" className="gap-2">
-          <Plus className="w-5 h-5" />
-          افزودن محصول
-        </Button>
-      </div>
-
-      <div className="space-y-3">
-        {products.map((product) => (
-          <Card key={product.id}>
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-cream-dark flex-shrink-0" />
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-navy truncate">{product.name}</h3>
-                  {product.badge && (
-                    <Badge variant="crown" className="text-[10px]">
-                      {product.badge}
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-sm text-navy/50 mt-0.5">{product.category}</p>
-                <p className="text-gold font-bold mt-1">
-                  {product.price.toLocaleString("fa-IR")} تومان
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Badge variant={product.isActive ? "success" : "default"}>
-                  {product.isActive ? "فعال" : "غیرفعال"}
-                </Badge>
-                <button className="p-2 text-navy/40 hover:text-navy">
-                  <Pencil className="w-4 h-4" />
-                </button>
-                <button className="p-2 text-navy/40 hover:text-red-500">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
+    <ProductsClient
+      initialProducts={products || []}
+      categories={categories || []}
+      businessId={business.id}
+    />
   );
 }

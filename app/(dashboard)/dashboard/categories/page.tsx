@@ -1,51 +1,34 @@
-"use client";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { CategoriesClient } from "./CategoriesClient";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+export default async function CategoriesPage() {
+  const supabase = await createClient();
 
-const sampleCategories = [
-  { id: "1", name: "نوشیدنی گرم", productCount: 8 },
-  { id: "2", name: "نوشیدنی سرد", productCount: 5 },
-  { id: "3", name: "دسر", productCount: 4 },
-];
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-export default function CategoriesPage() {
+  if (!user) redirect("/login");
+
+  const { data: business } = await supabase
+    .from("businesses")
+    .select("id")
+    .eq("owner_id", user.id)
+    .maybeSingle();
+
+  if (!business) redirect("/dashboard/onboarding");
+
+  const { data: categories } = await supabase
+    .from("categories")
+    .select("*")
+    .eq("business_id", business.id)
+    .order("sort_order");
+
   return (
-    <div className="space-y-6 max-w-3xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-navy">دسته‌بندی‌ها</h1>
-          <p className="text-navy/60 text-sm mt-1">
-            {sampleCategories.length} دسته‌بندی
-          </p>
-        </div>
-        <Button variant="gold" className="gap-2">
-          <Plus className="w-5 h-5" />
-          افزودن دسته
-        </Button>
-      </div>
-
-      <div className="space-y-3">
-        {sampleCategories.map((cat) => (
-          <Card key={cat.id}>
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-navy">{cat.name}</h3>
-                <p className="text-sm text-navy/50">{cat.productCount} محصول</p>
-              </div>
-              <div className="flex gap-2">
-                <button className="p-2 text-navy/40 hover:text-navy">
-                  <Pencil className="w-4 h-4" />
-                </button>
-                <button className="p-2 text-navy/40 hover:text-red-500">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
+    <CategoriesClient
+      initialCategories={categories || []}
+      businessId={business.id}
+    />
   );
 }
