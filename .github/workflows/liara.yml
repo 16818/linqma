@@ -1,0 +1,19 @@
+name: Deploy to Liara
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Liara
+        uses: liara/deploy-action@v1
+        with:
+          app: linqma
+          api-token: ${{ secrets.LIARA_API_TOKEN }}
+          port: 3000

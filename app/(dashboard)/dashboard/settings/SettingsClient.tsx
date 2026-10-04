@@ -23,8 +23,8 @@ interface Business {
 }
 
 export function SettingsClient({ business }: { business: Business }) {
-  const [name, setName] = useState(business.name);
-  const [slug, setSlug] = useState(business.slug);
+const [name, setName] = useState(business.name ?? "");
+const [slug, setSlug] = useState(business.slug ?? "");
   const [description, setDescription] = useState(business.description || "");
   const [address, setAddress] = useState(business.address || "");
   const [phone, setPhone] = useState(business.phone || "");

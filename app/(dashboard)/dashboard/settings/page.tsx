@@ -17,7 +17,24 @@ export default async function SettingsPage() {
     .eq("owner_id", user.id)
     .maybeSingle();
 
-  if (!business) redirect("/dashboard/onboarding");
+  if (!business || !business.name || !business.slug) {
+    redirect("/dashboard/onboarding");
+  }
 
-  return <SettingsClient business={business} />;
+  return (
+    <SettingsClient
+      business={{
+        id: business.id,
+        name: business.name,
+        slug: business.slug,
+        description: business.description,
+        address: business.address,
+        phone: business.phone,
+        working_hours: business.working_hours,
+        logo_url: business.logo_url,
+        cover_url: business.cover_url,
+        is_published: business.is_published ?? false,
+      }}
+    />
+  );
 }
