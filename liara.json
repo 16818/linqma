@@ -1,0 +1,5 @@
+{
+  "platform": "next",
+  "app": "linqma",
+  "port": 3000
+}
