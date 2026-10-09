@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { ProductsClient } from "./ProductsClient";
 
@@ -13,8 +13,10 @@ export default async function ProductsPage() {
 
   const { data: business } = await supabase
     .from("businesses")
-    .select("id")
+    .select("id, name, slug, is_published")
     .eq("owner_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (!business) {

@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -18,6 +17,8 @@ export default async function DashboardPage() {
     .from("businesses")
     .select("id, name, slug, is_published")
     .eq("owner_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (!business) {
@@ -37,9 +38,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
-        <h1 className="text-2xl font-bold text-navy">
-          سلام، {business.name} 👋
-        </h1>
+        <h1 className="text-2xl font-bold text-navy">سلام، {business.name}</h1>
         <p className="text-navy/60 mt-1">از اینجا کسب‌وکار خود را مدیریت کنید</p>
       </div>
 
@@ -47,21 +46,19 @@ export default async function DashboardPage() {
         <Card>
           <CardContent className="p-5 flex flex-col items-center text-center gap-2">
             <Package className="w-8 h-8 text-gold" />
-            <span className="text-2xl font-bold text-navy">
-              {productsCount || 0}
-            </span>
+            <span className="text-2xl font-bold text-navy">{productsCount || 0}</span>
             <span className="text-sm text-navy/60">محصول</span>
           </CardContent>
         </Card>
+
         <Card>
           <CardContent className="p-5 flex flex-col items-center text-center gap-2">
             <Tags className="w-8 h-8 text-gold" />
-            <span className="text-2xl font-bold text-navy">
-              {categoriesCount || 0}
-            </span>
+            <span className="text-2xl font-bold text-navy">{categoriesCount || 0}</span>
             <span className="text-sm text-navy/60">دسته‌بندی</span>
           </CardContent>
         </Card>
+
         <Card>
           <CardContent className="p-5 flex flex-col items-center text-center gap-2">
             <Eye className="w-8 h-8 text-gold" />
@@ -71,6 +68,7 @@ export default async function DashboardPage() {
             <span className="text-sm text-navy/60">وضعیت انتشار</span>
           </CardContent>
         </Card>
+
         <Card>
           <CardContent className="p-5 flex flex-col items-center text-center gap-2">
             <QrCode className="w-8 h-8 text-gold" />

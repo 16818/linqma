@@ -93,17 +93,22 @@ export function BusinessClient({
   };
 
   const allCategories = [
-    { id: "all", name: "همه", icon: "🍽️" },
+    { id: "all", name: "همه", icon: "☕" },
     ...categories.map((c) => ({
       id: c.id,
       name: c.name,
-      icon: c.icon || undefined,
+      icon: c.icon || "☕",
     })),
   ];
 
-  const filteredProducts =
+  const specialProducts = products.filter(
+    (p) => p.badge === "ویژه" || p.badge === "محبوب" || p.badge === "جدید"
+  );
+  const specialIds = new Set(specialProducts.map((p) => p.id));
+
+  const listProducts =
     activeCategory === "all"
-      ? products
+      ? products.filter((p) => !specialIds.has(p.id))
       : products.filter((p) => p.category_id === activeCategory);
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -113,7 +118,7 @@ export function BusinessClient({
   );
 
   return (
-    <div className="min-h-screen bg-cream font-vazir pb-28">
+    <div className="min-h-screen bg-[#FAF7F2] font-[Vazirmatn] pb-28" dir="rtl">
       <BusinessHeader
         name={business.name}
         description={business.description || undefined}
@@ -130,14 +135,45 @@ export function BusinessClient({
         onChange={setActiveCategory}
       />
 
-      <div className="px-4 py-6">
-        {filteredProducts.length === 0 ? (
-          <div className="text-center py-16 text-navy/50">
+      {activeCategory === "all" && specialProducts.length > 0 && (
+        <div className="px-4 md:px-6 max-w-6xl mx-auto pt-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-bold text-[#1a1a1a] text-base">
+              ✨ پیشنهادهای ویژه
+            </h2>
+            <span className="text-xs text-[#C4A574] font-medium">مشاهده همه</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {specialProducts.slice(0, 4).map((product) => (
+              <ProductCard
+                key={`special-${product.id}`}
+                id={product.id}
+                name={product.name}
+                description={product.description || undefined}
+                price={product.price}
+                imageUrl={product.image_url || undefined}
+                badge={product.badge}
+                onAdd={addToCart}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="px-4 md:px-6 max-w-6xl mx-auto pt-5 pb-6">
+        <h2 className="font-bold text-[#1a1a1a] text-base mb-3">
+          {activeCategory === "all"
+            ? "همه محصولات"
+            : allCategories.find((c) => c.id === activeCategory)?.name}
+        </h2>
+
+        {listProducts.length === 0 ? (
+          <div className="text-center py-16 text-[#8B7355]/60">
             محصولی در این دسته وجود ندارد
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {filteredProducts.map((product) => (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {listProducts.map((product) => (
               <ProductCard
                 key={product.id}
                 id={product.id}
@@ -146,7 +182,6 @@ export function BusinessClient({
                 price={product.price}
                 imageUrl={product.image_url || undefined}
                 badge={product.badge}
-                ingredients={product.ingredients || []}
                 onAdd={addToCart}
               />
             ))}
