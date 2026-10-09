@@ -10,6 +10,7 @@ interface ProductCardProps {
   imageUrl?: string;
   badge?: "ویژه" | "محبوب" | "جدید" | null;
   ingredients?: string[];
+  isAvailable?: boolean;
   onAdd?: (id: string) => void;
   className?: string;
 }
@@ -21,6 +22,7 @@ export function ProductCard({
   price,
   imageUrl,
   badge,
+  isAvailable = true,
   onAdd,
   className,
 }: ProductCardProps) {
@@ -53,6 +55,11 @@ export function ProductCard({
             {badge}
           </span>
         )}
+        {!isAvailable && (
+          <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1a1a1a] text-white">
+            تمام شد
+          </span>
+        )}
       </div>
 
       <div className="p-3">
@@ -73,10 +80,16 @@ export function ProductCard({
           </div>
           {onAdd && (
             <button
-              onClick={() => onAdd(id)}
-              className="h-8 px-2.5 rounded-lg bg-[#C4A574] text-white text-[11px] font-bold cursor-pointer"
+              onClick={() => isAvailable && onAdd(id)}
+              disabled={!isAvailable}
+              className={cn(
+                "h-8 px-2.5 rounded-lg text-[11px] font-bold",
+                isAvailable
+                  ? "bg-[#C4A574] text-white cursor-pointer"
+                  : "bg-[#E5E0D8] text-[#8B7355] cursor-not-allowed"
+              )}
             >
-              سفارش
+              {isAvailable ? "سفارش" : "ناموجود"}
             </button>
           )}
         </div>

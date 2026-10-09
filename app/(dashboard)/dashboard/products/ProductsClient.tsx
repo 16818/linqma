@@ -16,6 +16,7 @@ interface Product {
   price: number;
   image_url?: string | null;
   is_active: boolean;
+  is_available?: boolean;
   badge?: string | null;
   category_id?: string | null;
   ingredients?: string[] | null;
@@ -53,6 +54,21 @@ export function ProductsClient({
     if (!error) {
       setProducts((prev) =>
         prev.map((p) => (p.id === id ? { ...p, is_active: !current } : p))
+      );
+    }
+  };
+
+  const toggleAvailable = async (id: string, current: boolean) => {
+    const { error } = await supabase
+      .from("products")
+      .update({ is_available: !current })
+      .eq("id", id);
+
+    if (!error) {
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === id ? { ...p, is_available: !current } : p
+        )
       );
     }
   };
@@ -128,6 +144,13 @@ export function ProductsClient({
                 </div>
 
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => toggleAvailable(product.id, product.is_available ?? true)}
+                  >
+                    <Badge variant={product.is_available === false ? "default" : "success"}>
+                      {product.is_available === false ? "تمام شد" : "موجود"}
+                    </Badge>
+                  </button>
                   <button
                     onClick={() => toggleActive(product.id, product.is_active)}
                   >

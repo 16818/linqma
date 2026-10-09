@@ -27,6 +27,6 @@ body {
 button,
 a,
 [role="button"],
-.cursor-click {
+summary {
   cursor: pointer;
 }

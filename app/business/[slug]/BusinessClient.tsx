@@ -34,6 +34,7 @@ interface Product {
   badge?: "ویژه" | "محبوب" | "جدید" | null;
   ingredients?: string[] | null;
   category_id?: string | null;
+  is_available?: boolean;
 }
 
 interface CartItem {
@@ -69,6 +70,7 @@ export function BusinessClient({
   const addToCart = (productId: string) => {
     const product = products.find((p) => p.id === productId);
     if (!product) return;
+    if (product.is_available === false) return;
 
     setCart((prev) => {
       const existing = prev.find((item) => item.id === productId);
@@ -153,6 +155,7 @@ export function BusinessClient({
                 price={product.price}
                 imageUrl={product.image_url || undefined}
                 badge={product.badge}
+                isAvailable={product.is_available !== false}
                 onAdd={addToCart}
               />
             ))}
@@ -182,6 +185,7 @@ export function BusinessClient({
                 price={product.price}
                 imageUrl={product.image_url || undefined}
                 badge={product.badge}
+                isAvailable={product.is_available !== false}
                 onAdd={addToCart}
               />
             ))}
