@@ -25,7 +25,7 @@ export function CategoryTabs({ categories, activeId, onChange }: CategoryTabsPro
               key={cat.id}
               onClick={() => onChange(cat.id)}
               className={cn(
-                "flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition",
+                "flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition cursor-pointer",
                 active
                   ? "bg-[#C4A574] text-white shadow-sm"
                   : "bg-[#F5F0E8] text-[#5C4A3A]"

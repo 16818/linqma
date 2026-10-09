@@ -23,3 +23,10 @@ body {
   color: #0F172A;
   direction: rtl;
 }
+
+button,
+a,
+[role="button"],
+.cursor-click {
+  cursor: pointer;
+}
