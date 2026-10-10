@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MapPin, Clock, Phone, Instagram } from "lucide-react";
 
 interface BusinessHeaderProps {
@@ -18,6 +18,40 @@ interface BusinessHeaderProps {
 
 type DetailKey = "address" | "hours" | "phone" | null;
 
+function getOpenStatus(workingHours?: string): {
+  isOpen: boolean;
+  label: string;
+} | null {
+  if (!workingHours) return null;
+
+  const match = workingHours.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+
+  const startH = parseInt(match[1], 10);
+  const startM = parseInt(match[2], 10);
+  const endH = parseInt(match[3], 10);
+  const endM = parseInt(match[4], 10);
+
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const startMinutes = startH * 60 + startM;
+  let endMinutes = endH * 60 + endM;
+
+  if (endMinutes === 0) endMinutes = 24 * 60;
+
+  let isOpen = false;
+  if (endMinutes > startMinutes) {
+    isOpen = currentMinutes >= startMinutes && currentMinutes < endMinutes;
+  } else {
+    isOpen = currentMinutes >= startMinutes || currentMinutes < endMinutes;
+  }
+
+  return {
+    isOpen,
+    label: isOpen ? "اکنون باز است" : "اکنون بسته است",
+  };
+}
+
 export function BusinessHeader({
   name,
   description,
@@ -31,6 +65,18 @@ export function BusinessHeader({
   whatsapp,
 }: BusinessHeaderProps) {
   const [open, setOpen] = useState<DetailKey>(null);
+  const [openStatus, setOpenStatus] = useState<{
+    isOpen: boolean;
+    label: string;
+  } | null>(null);
+
+  useEffect(() => {
+    setOpenStatus(getOpenStatus(workingHours));
+    const interval = setInterval(() => {
+      setOpenStatus(getOpenStatus(workingHours));
+    }, 60 * 1000);
+    return () => clearInterval(interval);
+  }, [workingHours]);
 
   const toggle = (key: DetailKey) => {
     setOpen((prev) => (prev === key ? null : key));
@@ -47,7 +93,6 @@ export function BusinessHeader({
 
   return (
     <div className="w-full">
-      {/* کاور کشیده و پر */}
       <div className="relative w-full h-48 sm:h-56 md:h-64 bg-[#EDE8DF] overflow-hidden">
         {coverUrl ? (
           <img
@@ -61,7 +106,6 @@ export function BusinessHeader({
         <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent pointer-events-none" />
       </div>
 
-      {/* لوگو */}
       <div className="relative z-10 flex justify-center -mt-12 sm:-mt-14">
         <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-white bg-white shadow-lg overflow-hidden">
           {logoUrl ? (
@@ -74,7 +118,6 @@ export function BusinessHeader({
         </div>
       </div>
 
-      {/* ردیف ۱: نام + توضیح کوتاه */}
       <div className="pt-3 px-4 text-center max-w-xl mx-auto">
         <h1 className="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight leading-tight">
           {name}
@@ -84,9 +127,27 @@ export function BusinessHeader({
             {description}
           </p>
         )}
+
+        {openStatus && (
+          <div className="mt-2 flex justify-center">
+            <span
+              className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full ${
+                openStatus.isOpen
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-600"
+              }`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  openStatus.isOpen ? "bg-green-500" : "bg-red-500"
+                }`}
+              />
+              {openStatus.label}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* ردیف ۲: آیکون‌ها */}
       <div className="mt-3 pb-4 px-4 flex flex-col items-center gap-2">
         <div className="flex items-center justify-center gap-2">
           {address && (
@@ -176,7 +237,6 @@ export function BusinessHeader({
           )}
         </div>
 
-        {/* متن جزئیات فقط با کلیک */}
         {detailText && (
           <div className="max-w-sm w-full text-center">
             {open === "phone" ? (
