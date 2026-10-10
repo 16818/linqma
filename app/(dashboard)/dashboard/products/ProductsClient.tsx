@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Star } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ProductForm } from "@/components/dashboard/ProductForm";
 import { useRouter } from "next/navigation";
@@ -14,6 +14,7 @@ interface Product {
   name: string;
   description?: string;
   price: number;
+  discount_price?: number | null;
   image_url?: string | null;
   is_active: boolean;
   is_available?: boolean;
@@ -127,100 +128,136 @@ export function ProductsClient({
             هنوز محصولی اضافه نکرده‌اید
           </div>
         ) : (
-          products.map((product) => (
-            <Card key={product.id}>
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-cream-dark flex-shrink-0 overflow-hidden">
-                  {product.image_url && (
-                    <img
-                      src={product.image_url}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                </div>
+          products.map((product) => {
+            const hasDiscount =
+              product.discount_price != null &&
+              product.discount_price > 0 &&
+              product.discount_price < product.price;
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-bold text-navy truncate">
-                      {product.name}
-                    </h3>
-                    {product.badge && (
-                      <Badge variant="crown" className="text-[10px]">
-                        {product.badge}
-                      </Badge>
-                    )}
-                    {product.is_featured_today && (
-                      <Badge className="text-[10px] bg-[#D4AF37] text-white">
-                        ⭐ امروز
-                      </Badge>
+            return (
+              <Card key={product.id}>
+                <CardContent className="p-4 flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-cream-dark flex-shrink-0 overflow-hidden">
+                    {product.image_url && (
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                      />
                     )}
                   </div>
-                  <p className="text-sm text-navy/50 mt-0.5">
-                    {product.categories?.name || "بدون دسته"}
-                  </p>
-                  <p className="text-gold font-bold mt-1">
-                    {product.price.toLocaleString("fa-IR")} تومان
-                  </p>
-                </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    onClick={() =>
-                      toggleFeaturedToday(
-                        product.id,
-                        product.is_featured_today ?? false
-                      )
-                    }
-                    title="پیشنهاد امروز"
-                  >
-                    <Badge
-                      variant={
-                        product.is_featured_today ? "crown" : "default"
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-bold text-navy truncate">
+                        {product.name}
+                      </h3>
+                      {product.badge && (
+                        <Badge variant="crown" className="text-[10px]">
+                          {product.badge}
+                        </Badge>
+                      )}
+                      {product.is_featured_today && (
+                        <Badge className="text-[10px] bg-[#D4AF37] text-white">
+                          ⭐ امروز
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-navy/50 mt-0.5">
+                      {product.categories?.name || "بدون دسته"}
+                    </p>
+
+                    {hasDiscount ? (
+                      <div className="mt-1 flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-navy/40 line-through">
+                          {product.price.toLocaleString("fa-IR")}
+                        </span>
+                        <span className="text-gold font-bold">
+                          {product.discount_price!.toLocaleString("fa-IR")} تومان
+                        </span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600">
+                          ٪
+                          {Math.round(
+                            ((product.price - product.discount_price!) /
+                              product.price) *
+                              100
+                          )}
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-gold font-bold mt-1">
+                        {product.price.toLocaleString("fa-IR")} تومان
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() =>
+                        toggleFeaturedToday(
+                          product.id,
+                          product.is_featured_today ?? false
+                        )
+                      }
+                      title="پیشنهاد امروز"
+                    >
+                      <Badge
+                        variant={
+                          product.is_featured_today ? "crown" : "default"
+                        }
+                      >
+                        ⭐ امروز
+                      </Badge>
+                    </button>
+                    <button
+                      onClick={() =>
+                        toggleAvailable(
+                          product.id,
+                          product.is_available ?? true
+                        )
                       }
                     >
-                      ⭐ امروز
-                    </Badge>
-                  </button>
-                  <button
-                    onClick={() =>
-                      toggleAvailable(product.id, product.is_available ?? true)
-                    }
-                  >
-                    <Badge
-                      variant={
-                        product.is_available === false ? "default" : "success"
+                      <Badge
+                        variant={
+                          product.is_available === false
+                            ? "default"
+                            : "success"
+                        }
+                      >
+                        {product.is_available === false ? "تمام شد" : "موجود"}
+                      </Badge>
+                    </button>
+                    <button
+                      onClick={() =>
+                        toggleActive(product.id, product.is_active)
                       }
                     >
-                      {product.is_available === false ? "تمام شد" : "موجود"}
-                    </Badge>
-                  </button>
-                  <button
-                    onClick={() => toggleActive(product.id, product.is_active)}
-                  >
-                    <Badge variant={product.is_active ? "success" : "default"}>
-                      {product.is_active ? "فعال" : "غیرفعال"}
-                    </Badge>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditingProduct(product);
-                      setShowForm(true);
-                    }}
-                    className="p-2 text-navy/40 hover:text-navy"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => deleteProduct(product.id)}
-                    className="p-2 text-navy/40 hover:text-red-500"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                      <Badge
+                        variant={product.is_active ? "success" : "default"}
+                      >
+                        {product.is_active ? "فعال" : "غیرفعال"}
+                      </Badge>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingProduct(product);
+                        setShowForm(true);
+                      }}
+                      className="p-2 text-navy/40 hover:text-navy"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => deleteProduct(product.id)}
+                      className="p-2 text-navy/40 hover:text-red-500"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
         )}
       </div>
 

@@ -31,6 +31,7 @@ interface Product {
   name: string;
   description?: string | null;
   price: number;
+  discount_price?: number | null;
   image_url?: string | null;
   badge?: "ویژه" | "محبوب" | "جدید" | null;
   ingredients?: string[] | null;
@@ -75,6 +76,11 @@ export function BusinessClient({
     const product = products.find((p) => p.id === productId);
     if (!product) return;
 
+    const finalPrice =
+      product.discount_price && product.discount_price < product.price
+        ? product.discount_price
+        : product.price;
+
     setCart((prev) => {
       const existing = prev.find((item) => item.id === productId);
       if (existing) {
@@ -89,7 +95,7 @@ export function BusinessClient({
         {
           id: product.id,
           name: product.name,
-          price: product.price,
+          price: finalPrice,
           quantity: 1,
           imageUrl: product.image_url || undefined,
         },
@@ -126,18 +132,16 @@ export function BusinessClient({
     })),
   ];
 
-  const featuredTodayProducts = products.filter(
-    (p) => p.is_featured_today === true
+  const featuredTodayIds = new Set(
+    products.filter((p) => p.is_featured_today === true).map((p) => p.id)
   );
 
   const specialProducts = products.filter(
-    (p) =>
-      !p.is_featured_today &&
-      (p.badge === "ویژه" || p.badge === "محبوب" || p.badge === "جدید")
+    (p) => p.badge === "ویژه" || p.badge === "محبوب" || p.badge === "جدید"
   );
   const specialIds = new Set([
     ...specialProducts.map((p) => p.id),
-    ...featuredTodayProducts.map((p) => p.id),
+    ...featuredTodayIds,
   ]);
 
   const filteredProducts = useMemo(() => {
@@ -221,59 +225,36 @@ export function BusinessClient({
         </div>
       </div>
 
-      {!searchQuery && activeCategory === "all" && featuredTodayProducts.length > 0 && (
-        <div className="px-4 md:px-6 max-w-6xl mx-auto pt-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-bold text-[#1a1a1a] text-base">
-              ⭐ پیشنهاد امروز
-            </h2>
+      {!searchQuery &&
+        activeCategory === "all" &&
+        specialProducts.length > 0 && (
+          <div className="px-4 md:px-6 max-w-6xl mx-auto pt-5">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-bold text-[#1a1a1a] text-base">
+                ✨ پیشنهادهای ویژه
+              </h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {specialProducts.slice(0, 4).map((product) => (
+                <ProductCard
+                  key={`special-${product.id}`}
+                  id={product.id}
+                  name={product.name}
+                  description={product.description || undefined}
+                  price={product.price}
+                  discountPrice={product.discount_price}
+                  imageUrl={product.image_url || undefined}
+                  badge={product.badge}
+                  isAvailable={product.is_available !== false}
+                  isFeaturedToday={product.is_featured_today === true}
+                  quantity={getQuantity(product.id)}
+                  onAdd={addToCart}
+                  onRemove={removeFromCart}
+                />
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {featuredTodayProducts.slice(0, 4).map((product) => (
-              <ProductCard
-                key={`featured-${product.id}`}
-                id={product.id}
-                name={product.name}
-                description={product.description || undefined}
-                price={product.price}
-                imageUrl={product.image_url || undefined}
-                badge="ویژه"
-                isAvailable={product.is_available !== false}
-                quantity={getQuantity(product.id)}
-                onAdd={addToCart}
-                onRemove={removeFromCart}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {!searchQuery && activeCategory === "all" && specialProducts.length > 0 && (
-        <div className="px-4 md:px-6 max-w-6xl mx-auto pt-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-bold text-[#1a1a1a] text-base">
-              ✨ پیشنهادهای ویژه
-            </h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {specialProducts.slice(0, 4).map((product) => (
-              <ProductCard
-                key={`special-${product.id}`}
-                id={product.id}
-                name={product.name}
-                description={product.description || undefined}
-                price={product.price}
-                imageUrl={product.image_url || undefined}
-                badge={product.badge}
-                isAvailable={product.is_available !== false}
-                quantity={getQuantity(product.id)}
-                onAdd={addToCart}
-                onRemove={removeFromCart}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+        )}
 
       <div className="px-4 md:px-6 max-w-6xl mx-auto pt-5 pb-6">
         <h2 className="font-bold text-[#1a1a1a] text-base mb-3">
@@ -299,9 +280,11 @@ export function BusinessClient({
                 name={product.name}
                 description={product.description || undefined}
                 price={product.price}
+                discountPrice={product.discount_price}
                 imageUrl={product.image_url || undefined}
                 badge={product.badge}
                 isAvailable={product.is_available !== false}
+                isFeaturedToday={product.is_featured_today === true}
                 quantity={getQuantity(product.id)}
                 onAdd={addToCart}
                 onRemove={removeFromCart}
