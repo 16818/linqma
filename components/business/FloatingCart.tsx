@@ -1,7 +1,6 @@
 "use client";
 
 import { ShoppingBag } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface FloatingCartProps {
   itemCount: number;
@@ -14,32 +13,47 @@ export function FloatingCart({
   totalPrice,
   onClick,
 }: FloatingCartProps) {
-  if (itemCount === 0) return null;
+  if (itemCount <= 0) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 pb-6">
-      <button
-        onClick={onClick}
-        className={cn(
-          "w-full max-w-md mx-auto flex items-center justify-between",
-          "bg-navy text-white rounded-2xl px-5 py-4 shadow-soft-lg",
-          "active:scale-[0.98] transition-transform"
-        )}
-      >
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <ShoppingBag className="w-6 h-6" />
-            <span className="absolute -top-2 -right-2 w-5 h-5 bg-gold text-navy text-xs font-bold rounded-full flex items-center justify-center">
-              {itemCount}
-            </span>
+    <div className="fixed bottom-0 inset-x-0 z-40 pointer-events-none">
+      <div className="max-w-lg mx-auto px-4 pb-5 pt-2">
+        <button
+          type="button"
+          onClick={onClick}
+          className="pointer-events-auto w-full flex items-center justify-between gap-3
+            rounded-2xl bg-[#0F172A] text-white px-4 py-3.5
+            shadow-[0_12px_40px_-8px_rgba(15,23,42,0.45)]
+            active:scale-[0.98] transition-transform cursor-pointer"
+        >
+          <div className="flex items-center gap-3">
+            <div className="relative w-10 h-10 rounded-xl bg-[#D4AF37] flex items-center justify-center shrink-0">
+              <ShoppingBag className="w-5 h-5 text-white" />
+              <span className="absolute -top-1.5 -left-1.5 min-w-[20px] h-5 px-1 rounded-full bg-white text-[#0F172A] text-[11px] font-black flex items-center justify-center">
+                {itemCount.toLocaleString("fa-IR")}
+              </span>
+            </div>
+            <div className="text-right">
+              <p className="text-[11px] text-white/60 font-medium leading-none">
+                سبد سفارش
+              </p>
+              <p className="mt-1 text-sm font-bold leading-none">
+                مشاهده و ادامه
+              </p>
+            </div>
           </div>
-          <span className="font-medium">مشاهده سفارش</span>
-        </div>
 
-        <div className="font-bold text-gold">
-          {totalPrice.toLocaleString("fa-IR")} تومان
-        </div>
-      </button>
+          <div className="text-left shrink-0">
+            <p className="text-[11px] text-white/60 leading-none">جمع</p>
+            <p className="mt-1 text-sm font-black text-[#D4AF37] leading-none">
+              {totalPrice.toLocaleString("fa-IR")}
+              <span className="text-[10px] font-medium text-white/70 mr-1">
+                تومان
+              </span>
+            </p>
+          </div>
+        </button>
+      </div>
     </div>
   );
 }

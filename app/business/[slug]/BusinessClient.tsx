@@ -70,7 +70,6 @@ export function BusinessClient({
   const addToCart = (productId: string) => {
     const product = products.find((p) => p.id === productId);
     if (!product) return;
-    if (product.is_available === false) return;
 
     setCart((prev) => {
       const existing = prev.find((item) => item.id === productId);
@@ -92,6 +91,26 @@ export function BusinessClient({
         },
       ];
     });
+  };
+
+  const removeFromCart = (productId: string) => {
+    setCart((prev) => {
+      const existing = prev.find((item) => item.id === productId);
+      if (!existing) return prev;
+      if (existing.quantity <= 1) {
+        return prev.filter((item) => item.id !== productId);
+      }
+      return prev.map((item) =>
+        item.id === productId
+          ? { ...item, quantity: item.quantity - 1 }
+          : item
+      );
+    });
+  };
+
+  const getQuantity = (productId: string) => {
+    const item = cart.find((i) => i.id === productId);
+    return item ? item.quantity : 0;
   };
 
   const allCategories = [
@@ -156,7 +175,9 @@ export function BusinessClient({
                 imageUrl={product.image_url || undefined}
                 badge={product.badge}
                 isAvailable={product.is_available !== false}
+                quantity={getQuantity(product.id)}
                 onAdd={addToCart}
+                onRemove={removeFromCart}
               />
             ))}
           </div>
@@ -186,7 +207,9 @@ export function BusinessClient({
                 imageUrl={product.image_url || undefined}
                 badge={product.badge}
                 isAvailable={product.is_available !== false}
+                quantity={getQuantity(product.id)}
                 onAdd={addToCart}
+                onRemove={removeFromCart}
               />
             ))}
           </div>
