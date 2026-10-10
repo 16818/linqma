@@ -7,6 +7,7 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface Category {
   id: string;
@@ -124,9 +125,15 @@ export function CategoriesClient({
 
       <div className="space-y-3">
         {categories.length === 0 ? (
-          <div className="text-center py-16 text-navy/50">
-            هنوز دسته بندی ای نساخته اید
-          </div>
+          <EmptyState
+            icon="📂"
+            title="هنوز دسته‌بندی نساخته‌اید"
+            description="دسته‌بندی به مشتری کمک می‌کند سریع‌تر محصول پیدا کند"
+            action={{
+              label: "+ ساخت اولین دسته",
+              onClick: openAdd,
+            }}
+          />
         ) : (
           categories.map((cat) => (
             <Card key={cat.id}>
