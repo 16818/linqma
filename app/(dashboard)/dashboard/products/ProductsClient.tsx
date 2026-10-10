@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ProductForm } from "@/components/dashboard/ProductForm";
 import { useRouter } from "next/navigation";
@@ -17,6 +17,7 @@ interface Product {
   image_url?: string | null;
   is_active: boolean;
   is_available?: boolean;
+  is_featured_today?: boolean;
   badge?: string | null;
   category_id?: string | null;
   ingredients?: string[] | null;
@@ -68,6 +69,21 @@ export function ProductsClient({
       setProducts((prev) =>
         prev.map((p) =>
           p.id === id ? { ...p, is_available: !current } : p
+        )
+      );
+    }
+  };
+
+  const toggleFeaturedToday = async (id: string, current: boolean) => {
+    const { error } = await supabase
+      .from("products")
+      .update({ is_featured_today: !current })
+      .eq("id", id);
+
+    if (!error) {
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === id ? { ...p, is_featured_today: !current } : p
         )
       );
     }
@@ -125,13 +141,18 @@ export function ProductsClient({
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-bold text-navy truncate">
                       {product.name}
                     </h3>
                     {product.badge && (
                       <Badge variant="crown" className="text-[10px]">
                         {product.badge}
+                      </Badge>
+                    )}
+                    {product.is_featured_today && (
+                      <Badge className="text-[10px] bg-[#D4AF37] text-white">
+                        ⭐ امروز
                       </Badge>
                     )}
                   </div>
@@ -143,11 +164,34 @@ export function ProductsClient({
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <button
-                    onClick={() => toggleAvailable(product.id, product.is_available ?? true)}
+                    onClick={() =>
+                      toggleFeaturedToday(
+                        product.id,
+                        product.is_featured_today ?? false
+                      )
+                    }
+                    title="پیشنهاد امروز"
                   >
-                    <Badge variant={product.is_available === false ? "default" : "success"}>
+                    <Badge
+                      variant={
+                        product.is_featured_today ? "crown" : "default"
+                      }
+                    >
+                      ⭐ امروز
+                    </Badge>
+                  </button>
+                  <button
+                    onClick={() =>
+                      toggleAvailable(product.id, product.is_available ?? true)
+                    }
+                  >
+                    <Badge
+                      variant={
+                        product.is_available === false ? "default" : "success"
+                      }
+                    >
                       {product.is_available === false ? "تمام شد" : "موجود"}
                     </Badge>
                   </button>
