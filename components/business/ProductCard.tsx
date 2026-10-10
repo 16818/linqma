@@ -95,8 +95,8 @@ export function ProductCard({
         )}
 
         {hasDiscount && (
-          <span className="absolute top-2.5 left-2.5 text-[11px] font-black px-2.5 py-1 rounded-full bg-[#DC2626] text-white shadow-md">
-            ٪{discountPercent}
+          <span className="absolute top-2.5 left-2.5 text-[10px] font-black px-2.5 py-1 rounded-full bg-[#DC2626] text-white shadow-md">
+            ٪{discountPercent} off
           </span>
         )}
 
@@ -124,7 +124,7 @@ export function ProductCard({
           <div className="flex flex-col">
             {hasDiscount ? (
               <>
-                <span className="text-[10px] text-[#94A3B8] line-through leading-tight">
+                <span className="text-[13px] text-[#64748B] line-through leading-tight font-medium">
                   {price.toLocaleString("fa-IR")}
                 </span>
                 <div className="flex items-baseline gap-0.5">
