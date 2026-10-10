@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ProductForm } from "@/components/dashboard/ProductForm";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface Product {
   id: string;
@@ -146,9 +147,18 @@ export function ProductsClient({
 
       <div className="space-y-3">
         {products.length === 0 ? (
-          <div className="text-center py-16 text-navy/50">
-            هنوز محصولی اضافه نکرده‌اید
-          </div>
+          <EmptyState
+            icon="🛍️"
+            title="هنوز محصولی اضافه نکرده‌اید"
+            description="اولین محصول خود را اضافه کنید و ویترین دیجیتال را زنده کنید"
+            action={{
+              label: "+ افزودن اولین محصول",
+              onClick: () => {
+                setEditingProduct(null);
+                setShowForm(true);
+              },
+            }}
+          />
         ) : (
           products.map((product) => {
             const hasDiscount =
