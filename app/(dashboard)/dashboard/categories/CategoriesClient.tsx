@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface Category {
   id: string;
@@ -54,13 +55,18 @@ export function CategoriesClient({
         .update({ name, icon: icon || null })
         .eq("id", editing.id);
 
-      if (!error) {
-        setCategories((prev) =>
-          prev.map((c) =>
-            c.id === editing.id ? { ...c, name, icon: icon || null } : c
-          )
-        );
+      if (error) {
+        toast.error("خطا در ذخیره دسته‌بندی");
+        setLoading(false);
+        return;
       }
+
+      setCategories((prev) =>
+        prev.map((c) =>
+          c.id === editing.id ? { ...c, name, icon: icon || null } : c
+        )
+      );
+      toast.success("دسته‌بندی ویرایش شد");
     } else {
       const { data, error } = await supabase
         .from("categories")
@@ -72,9 +78,14 @@ export function CategoriesClient({
         .select()
         .single();
 
-      if (!error && data) {
-        setCategories((prev) => [...prev, data]);
+      if (error || !data) {
+        toast.error("خطا در ساخت دسته‌بندی");
+        setLoading(false);
+        return;
       }
+
+      setCategories((prev) => [...prev, data]);
+      toast.success("دسته‌بندی اضافه شد");
     }
 
     setLoading(false);
@@ -87,9 +98,13 @@ export function CategoriesClient({
 
     const { error } = await supabase.from("categories").delete().eq("id", id);
 
-    if (!error) {
-      setCategories((prev) => prev.filter((c) => c.id !== id));
+    if (error) {
+      toast.error("خطا در حذف دسته‌بندی");
+      return;
     }
+
+    setCategories((prev) => prev.filter((c) => c.id !== id));
+    toast.success("دسته‌بندی حذف شد");
   };
 
   return (
@@ -149,7 +164,9 @@ export function CategoriesClient({
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-navy/70">نام *</label>
+                <label className="text-sm font-medium text-navy/70">
+                  نام *
+                </label>
                 <input
                   type="text"
                   value={name}
@@ -167,7 +184,7 @@ export function CategoriesClient({
                   type="text"
                   value={icon}
                   onChange={(e) => setIcon(e.target.value)}
-                  placeholder="مثال: coffee"
+                  placeholder="مثال: ☕ یا 🍰"
                   className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50"
                 />
               </div>
@@ -181,7 +198,12 @@ export function CategoriesClient({
                 >
                   انصراف
                 </Button>
-                <Button type="submit" variant="gold" className="flex-1" disabled={loading}>
+                <Button
+                  type="submit"
+                  variant="gold"
+                  className="flex-1"
+                  disabled={loading}
+                >
                   {loading ? "..." : editing ? "ذخیره" : "افزودن"}
                 </Button>
               </div>
