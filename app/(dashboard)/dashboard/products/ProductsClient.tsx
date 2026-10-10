@@ -8,6 +8,7 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ProductForm } from "@/components/dashboard/ProductForm";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface Product {
   id: string;
@@ -45,7 +46,10 @@ export function ProductsClient({
   const router = useRouter();
   const supabase = createClient();
 
-  const refresh = () => router.refresh();
+  const refresh = () => {
+    router.refresh();
+    toast.success("محصول ذخیره شد");
+  };
 
   const toggleActive = async (id: string, current: boolean) => {
     const { error } = await supabase
@@ -53,11 +57,15 @@ export function ProductsClient({
       .update({ is_active: !current })
       .eq("id", id);
 
-    if (!error) {
-      setProducts((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, is_active: !current } : p))
-      );
+    if (error) {
+      toast.error("خطا در تغییر وضعیت");
+      return;
     }
+
+    setProducts((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, is_active: !current } : p))
+    );
+    toast.success(current ? "محصول غیرفعال شد" : "محصول فعال شد");
   };
 
   const toggleAvailable = async (id: string, current: boolean) => {
@@ -66,13 +74,17 @@ export function ProductsClient({
       .update({ is_available: !current })
       .eq("id", id);
 
-    if (!error) {
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === id ? { ...p, is_available: !current } : p
-        )
-      );
+    if (error) {
+      toast.error("خطا در تغییر وضعیت");
+      return;
     }
+
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === id ? { ...p, is_available: !current } : p
+      )
+    );
+    toast.success(current ? "محصول ناموجود شد" : "محصول موجود شد");
   };
 
   const toggleFeaturedToday = async (id: string, current: boolean) => {
@@ -81,13 +93,19 @@ export function ProductsClient({
       .update({ is_featured_today: !current })
       .eq("id", id);
 
-    if (!error) {
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === id ? { ...p, is_featured_today: !current } : p
-        )
-      );
+    if (error) {
+      toast.error("خطا در تغییر وضعیت");
+      return;
     }
+
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === id ? { ...p, is_featured_today: !current } : p
+      )
+    );
+    toast.success(
+      current ? "از پیشنهاد امروز حذف شد" : "به پیشنهاد امروز اضافه شد"
+    );
   };
 
   const deleteProduct = async (id: string) => {
@@ -95,9 +113,13 @@ export function ProductsClient({
 
     const { error } = await supabase.from("products").delete().eq("id", id);
 
-    if (!error) {
-      setProducts((prev) => prev.filter((p) => p.id !== id));
+    if (error) {
+      toast.error("خطا در حذف محصول");
+      return;
     }
+
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+    toast.success("محصول حذف شد");
   };
 
   return (
