@@ -8,6 +8,7 @@ import { ImageUpload } from "@/components/ImageUpload";
 import { Download } from "lucide-react";
 import QRCode from "qrcode";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface Business {
   id: string;
@@ -23,18 +24,17 @@ interface Business {
 }
 
 export function SettingsClient({ business }: { business: Business }) {
-const [name, setName] = useState(business.name ?? "");
-const [slug, setSlug] = useState(business.slug ?? "");
+  const [name, setName] = useState(business.name ?? "");
+  const [slug, setSlug] = useState(business.slug ?? "");
   const [description, setDescription] = useState(business.description || "");
   const [address, setAddress] = useState(business.address || "");
   const [phone, setPhone] = useState(business.phone || "");
   const [workingHours, setWorkingHours] = useState(business.working_hours || "");
-const [logoUrl, setLogoUrl] = useState<string | null>(business.logo_url ?? null);
-const [coverUrl, setCoverUrl] = useState<string | null>(business.cover_url ?? null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(business.logo_url ?? null);
+  const [coverUrl, setCoverUrl] = useState<string | null>(business.cover_url ?? null);
   const [isPublished, setIsPublished] = useState(business.is_published);
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
   const router = useRouter();
   const supabase = createClient();
 
@@ -51,7 +51,6 @@ const [coverUrl, setCoverUrl] = useState<string | null>(business.cover_url ?? nu
 
   const handleSave = async () => {
     setLoading(true);
-    setMessage("");
 
     const { error } = await supabase
       .from("businesses")
@@ -70,12 +69,14 @@ const [coverUrl, setCoverUrl] = useState<string | null>(business.cover_url ?? nu
       .eq("id", business.id);
 
     if (error) {
-      setMessage("خطا: " + error.message);
-    } else {
-      setMessage("تغییرات با موفقیت ذخیره شد");
-      router.refresh();
+      toast.error("خطا در ذخیره تغییرات");
+      setLoading(false);
+      return;
     }
+
+    toast.success("تغییرات ذخیره شد");
     setLoading(false);
+    router.refresh();
   };
 
   const downloadQR = () => {
@@ -83,6 +84,7 @@ const [coverUrl, setCoverUrl] = useState<string | null>(business.cover_url ?? nu
     link.download = `qr-${slug}.png`;
     link.href = qrDataUrl;
     link.click();
+    toast.success("QR Code دانلود شد");
   };
 
   return (
@@ -100,7 +102,9 @@ const [coverUrl, setCoverUrl] = useState<string | null>(business.cover_url ?? nu
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-navy/70">نام کسب و کار</label>
+            <label className="text-sm font-medium text-navy/70">
+              نام کسب و کار
+            </label>
             <input
               type="text"
               value={name}
@@ -110,9 +114,13 @@ const [coverUrl, setCoverUrl] = useState<string | null>(business.cover_url ?? nu
           </div>
 
           <div>
-            <label className="text-sm font-medium text-navy/70">آدرس اختصاصی</label>
+            <label className="text-sm font-medium text-navy/70">
+              آدرس اختصاصی
+            </label>
             <div className="mt-1.5 flex items-center gap-2">
-              <span className="text-sm text-navy/50 whitespace-nowrap">linqma.ir/</span>
+              <span className="text-sm text-navy/50 whitespace-nowrap">
+                linqma.ir/
+              </span>
               <input
                 type="text"
                 value={slug}
@@ -125,7 +133,9 @@ const [coverUrl, setCoverUrl] = useState<string | null>(business.cover_url ?? nu
           </div>
 
           <div>
-            <label className="text-sm font-medium text-navy/70">توضیح کوتاه</label>
+            <label className="text-sm font-medium text-navy/70">
+              توضیح کوتاه
+            </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -145,7 +155,9 @@ const [coverUrl, setCoverUrl] = useState<string | null>(business.cover_url ?? nu
           </div>
 
           <div>
-            <label className="text-sm font-medium text-navy/70">شماره تماس</label>
+            <label className="text-sm font-medium text-navy/70">
+              شماره تماس
+            </label>
             <input
               type="text"
               value={phone}
@@ -155,24 +167,31 @@ const [coverUrl, setCoverUrl] = useState<string | null>(business.cover_url ?? nu
           </div>
 
           <div>
-            <label className="text-sm font-medium text-navy/70">ساعات کاری</label>
+            <label className="text-sm font-medium text-navy/70">
+              ساعات کاری
+            </label>
             <input
               type="text"
               value={workingHours}
               onChange={(e) => setWorkingHours(e.target.value)}
-              placeholder="8:00 - 23:00"
+              placeholder="08:00-23:00"
               className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50"
             />
+            <p className="mt-1 text-xs text-navy/40">
+              فرمت: 08:00-23:00 (ساعت شروع و پایان)
+            </p>
           </div>
 
           <div className="flex items-center justify-between pt-2">
             <div>
               <p className="font-medium text-navy">وضعیت انتشار</p>
-              <p className="text-sm text-navy/50">صفحه عمومی قابل مشاهده باشد</p>
+              <p className="text-sm text-navy/50">
+                صفحه عمومی قابل مشاهده باشد
+              </p>
             </div>
             <button
               onClick={() => setIsPublished(!isPublished)}
-              className={`w-12 h-7 rounded-full transition-colors ${
+              className={`w-12 h-7 rounded-full transition-colors cursor-pointer ${
                 isPublished ? "bg-gold" : "bg-navy/20"
               }`}
             >
@@ -210,7 +229,9 @@ const [coverUrl, setCoverUrl] = useState<string | null>(business.cover_url ?? nu
           ) : (
             <div className="w-56 h-56 bg-cream-dark rounded-2xl animate-pulse" />
           )}
-          <p className="text-sm text-navy/60 text-center break-all">{businessUrl}</p>
+          <p className="text-sm text-navy/60 text-center break-all">
+            {businessUrl}
+          </p>
           <Button variant="gold" className="gap-2" onClick={downloadQR}>
             <Download className="w-4 h-4" />
             دانلود QR Code
@@ -218,17 +239,12 @@ const [coverUrl, setCoverUrl] = useState<string | null>(business.cover_url ?? nu
         </CardContent>
       </Card>
 
-      {message && (
-        <p
-          className={`text-center text-sm ${
-            message.includes("خطا") ? "text-red-500" : "text-emerald-600"
-          }`}
-        >
-          {message}
-        </p>
-      )}
-
-      <Button variant="primary" className="w-full" onClick={handleSave} disabled={loading}>
+      <Button
+        variant="primary"
+        className="w-full"
+        onClick={handleSave}
+        disabled={loading}
+      >
         {loading ? "در حال ذخیره..." : "ذخیره تغییرات"}
       </Button>
     </div>
