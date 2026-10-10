@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Trash2 } from "lucide-react";
+import { ArrowRight, Trash2, Check } from "lucide-react";
 import QRCode from "qrcode";
 
 interface CartItem {
@@ -79,8 +79,8 @@ export default function OrderPage({
 
     const text = `LINQMA|${code}|${slug}|${totalPrice}`;
     const dataUrl = await QRCode.toDataURL(text, {
-      width: 220,
-      margin: 2,
+      width: 260,
+      margin: 1,
       color: { dark: "#0F172A", light: "#FFFFFF" },
     });
     setQrDataUrl(dataUrl);
@@ -92,38 +92,52 @@ export default function OrderPage({
         className="min-h-screen bg-[#FAF7F2] font-[Vazirmatn] flex items-center justify-center p-4"
         dir="rtl"
       >
-        <div className="bg-white rounded-3xl border border-[#EDE8DF] p-8 max-w-md w-full text-center shadow-lg">
-          <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">✓</span>
+        <div className="bg-white rounded-[2rem] border border-[#EDE8DF] p-6 sm:p-8 max-w-md w-full shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)]">
+          <div className="text-center">
+            <div className="w-14 h-14 rounded-full bg-[#D4AF37]/15 flex items-center justify-center mx-auto mb-3">
+              <Check className="w-7 h-7 text-[#D4AF37]" strokeWidth={3} />
+            </div>
+
+            <h1 className="text-lg font-bold text-[#0F172A]">
+              سفارش شما ثبت شد
+            </h1>
+
+            <p className="text-xs text-[#64748B] mt-1">
+              این صفحه را به صندوق نشان دهید
+            </p>
           </div>
 
-          <h1 className="text-xl font-bold text-[#0F172A] mb-2">
-            سفارش شما ثبت شد
-          </h1>
+          <div className="mt-6 flex flex-col items-center">
+            {qrDataUrl && (
+              <div className="bg-white rounded-3xl p-3 border border-[#EDE8DF] shadow-sm">
+                <img
+                  src={qrDataUrl}
+                  alt="QR سفارش"
+                  className="w-52 h-52 rounded-2xl"
+                />
+              </div>
+            )}
 
-          <p className="text-sm text-[#64748B] mb-4">
-            این کیو‌آر را به صندوق نشان دهید
-          </p>
+            <div className="mt-4 flex items-center gap-2">
+              <span className="text-xs text-[#64748B]">کد سفارش:</span>
+              <span className="font-black text-3xl tracking-[0.3em] text-[#0F172A]">
+                {orderCode}
+              </span>
+            </div>
+          </div>
 
-          {qrDataUrl && (
-            <img
-              src={qrDataUrl}
-              alt="QR سفارش"
-              className="w-48 h-48 mx-auto rounded-2xl border border-[#EDE8DF]"
-            />
-          )}
-
-          <p className="text-center font-black text-2xl tracking-widest mt-2">
-            {orderCode}
-          </p>
-
-          <p className="text-xs text-[#64748B] mt-1 mb-6">
-            یا این کد را به صندوق اعلام کنید
-          </p>
-
-          <div className="text-right text-sm text-[#64748B] space-y-1 mb-6 bg-[#FAF7F2] rounded-xl p-4">
-            <p>تعداد اقلام: {totalItems}</p>
-            <p>مبلغ کل: {totalPrice.toLocaleString("fa-IR")} تومان</p>
+          <div className="mt-6 bg-[#FAF7F2] rounded-2xl p-4 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-[#64748B]">تعداد اقلام</span>
+              <span className="font-bold text-[#0F172A]">{totalItems}</span>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-[#EDE8DF]">
+              <span className="text-sm text-[#64748B]">جمع کل</span>
+              <span className="font-black text-2xl text-[#D4AF37]">
+                {totalPrice.toLocaleString("fa-IR")}
+                <span className="text-xs mr-1">تومان</span>
+              </span>
+            </div>
           </div>
 
           <button
@@ -133,7 +147,7 @@ export default function OrderPage({
               localStorage.removeItem(`linqma-cart-${slug}`);
               router.push(`/business/${slug}`);
             }}
-            className="w-full h-11 rounded-xl bg-[#0F172A] text-white font-bold cursor-pointer"
+            className="mt-6 w-full h-12 rounded-2xl bg-[#0F172A] text-white font-bold cursor-pointer hover:bg-[#1E293B] transition"
           >
             بازگشت به منو
           </button>
