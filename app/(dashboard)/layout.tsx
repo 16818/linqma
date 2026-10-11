@@ -10,8 +10,6 @@ import {
   LogOut,
   Store,
   Sliders,
-  ExternalLink,
-  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -26,14 +24,13 @@ const menuGroups = [
     ],
   },
   {
-    title: "تنظیمات",
+    title: "مدیریت",
     items: [
       {
         href: "/dashboard/settings",
-        label: "اطلاعات کسب‌وکار",
+        label: "تنظیمات و QR",
         icon: Settings,
       },
-      { href: "/dashboard/settings#qr", label: "QR و انتشار", icon: Sparkles },
     ],
   },
 ];
@@ -61,9 +58,6 @@ export default function DashboardLayout({
   };
 
   const isActive = (href: string) => {
-    if (href.includes("#")) {
-      return pathname === href.split("#")[0];
-    }
     return pathname === href;
   };
 
@@ -115,21 +109,6 @@ export default function DashboardLayout({
               </div>
             </div>
           ))}
-
-          <div>
-            <p className="px-3 mb-2 text-[10px] font-bold text-white/40 uppercase tracking-wider">
-              دسترسی سریع
-            </p>
-            <div className="space-y-1">
-              <Link
-                href="/dashboard/settings#qr"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
-              >
-                <ExternalLink className="w-4 h-4 shrink-0" />
-                <span>QR Code</span>
-              </Link>
-            </div>
-          </div>
         </nav>
 
         <div className="p-4 border-t border-white/10">
