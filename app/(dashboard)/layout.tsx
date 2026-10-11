@@ -10,6 +10,7 @@ import {
   LogOut,
   Store,
   Sliders,
+  ShoppingCart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -21,6 +22,12 @@ const menuGroups = [
       { href: "/dashboard", label: "داشبورد", icon: LayoutDashboard },
       { href: "/dashboard/products", label: "محصولات", icon: Package },
       { href: "/dashboard/categories", label: "دسته‌بندی‌ها", icon: Tags },
+    ],
+  },
+  {
+    title: "عملیات",
+    items: [
+      { href: "/dashboard/pos", label: "صندوق", icon: ShoppingCart },
     ],
   },
   {
@@ -37,9 +44,9 @@ const menuGroups = [
 
 const mobileMenuItems = [
   { href: "/dashboard", label: "داشبورد", icon: LayoutDashboard },
+  { href: "/dashboard/pos", label: "صندوق", icon: ShoppingCart },
   { href: "/dashboard/products", label: "محصولات", icon: Package },
   { href: "/dashboard/categories", label: "دسته‌ها", icon: Tags },
-  { href: "/dashboard/settings", label: "تنظیمات", icon: Sliders },
 ];
 
 export default function DashboardLayout({
