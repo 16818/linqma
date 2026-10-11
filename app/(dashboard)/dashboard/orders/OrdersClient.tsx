@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, Search, Clock, Check, Package } from "lucide-react";
+import { Download, Search, Clock, Check, Package, User, Phone, FileText } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { toast } from "sonner";
 
@@ -23,6 +23,10 @@ interface Order {
   total: number;
   status: string;
   created_at: string;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  customer_note?: string | null;
+  table_number?: string | null;
 }
 
 export function OrdersClient({
@@ -32,12 +36,17 @@ export function OrdersClient({
 }) {
   const [orders] = useState(initialOrders);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "confirmed">("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "pending" | "confirmed"
+  >("all");
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
-      const matchesSearch = searchQuery.trim()
-        ? order.short_code.toLowerCase().includes(searchQuery.toLowerCase())
+      const q = searchQuery.trim().toLowerCase();
+      const matchesSearch = q
+        ? order.short_code.toLowerCase().includes(q) ||
+          (order.customer_name && order.customer_name.toLowerCase().includes(q)) ||
+          (order.customer_phone && order.customer_phone.includes(q))
         : true;
       const matchesStatus =
         statusFilter === "all" ? true : order.status === statusFilter;
@@ -51,7 +60,17 @@ export function OrdersClient({
       return;
     }
 
-    const headers = ["تاریخ", "کد سفارش", "اقلام", "مبلغ کل (تومان)", "وضعیت"];
+    const headers = [
+      "تاریخ",
+      "کد سفارش",
+      "نام مشتری",
+      "تلفن",
+      "یادداشت",
+      "شماره میز",
+      "اقلام",
+      "مبلغ کل (تومان)",
+      "وضعیت",
+    ];
 
     const rows = filteredOrders.map((order) => {
       const date = new Date(order.created_at).toLocaleString("fa-IR");
@@ -59,7 +78,17 @@ export function OrdersClient({
         .map((item) => `${item.name} × ${item.quantity}`)
         .join(" | ");
       const status = order.status === "confirmed" ? "تأیید شده" : "در انتظار";
-      return [date, order.short_code, items, order.total.toString(), status];
+      return [
+        date,
+        order.short_code,
+        order.customer_name || "",
+        order.customer_phone || "",
+        order.customer_note || "",
+        order.table_number || "",
+        items,
+        order.total.toString(),
+        status,
+      ];
     });
 
     const csvContent = [headers, ...rows]
@@ -120,7 +149,7 @@ export function OrdersClient({
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-black text-gold">
+              <p className="text-xl font-black text-gold">
                 {totalRevenue.toLocaleString("fa-IR")}
               </p>
               <p className="text-xs text-navy/60 mt-1">فروش تأیید شده</p>
@@ -142,12 +171,12 @@ export function OrdersClient({
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value.toUpperCase())}
-              placeholder="جستجوی کد سفارش..."
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="جستجوی کد، نام یا تلفن..."
               className="w-full h-10 pr-9 pl-3 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-gold"
             />
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-1 flex-wrap">
             <button
               onClick={() => setStatusFilter("all")}
               className={`px-3 h-10 rounded-xl text-xs font-bold transition cursor-pointer ${
@@ -202,6 +231,11 @@ export function OrdersClient({
                     <span className="font-black text-lg text-navy tracking-widest">
                       {order.short_code}
                     </span>
+                    {order.table_number && (
+                      <Badge className="text-[10px] bg-[#F5F0E8] text-navy">
+                        میز {order.table_number}
+                      </Badge>
+                    )}
                     <Badge
                       variant={
                         order.status === "confirmed" ? "success" : "default"
@@ -225,6 +259,37 @@ export function OrdersClient({
                     {new Date(order.created_at).toLocaleString("fa-IR")}
                   </span>
                 </div>
+
+                {(order.customer_name ||
+                  order.customer_phone ||
+                  order.customer_note) && (
+                  <div className="mb-3 bg-[#FAF7F2] rounded-xl p-3 space-y-1.5">
+                    {order.customer_name && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <User className="w-3.5 h-3.5 text-navy/40" />
+                        <span className="text-navy/80">
+                          {order.customer_name}
+                        </span>
+                      </div>
+                    )}
+                    {order.customer_phone && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Phone className="w-3.5 h-3.5 text-navy/40" />
+                        <span className="text-navy/80" dir="ltr">
+                          {order.customer_phone}
+                        </span>
+                      </div>
+                    )}
+                    {order.customer_note && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <FileText className="w-3.5 h-3.5 text-navy/40" />
+                        <span className="text-navy/80">
+                          {order.customer_note}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="space-y-1.5 mb-3">
                   {order.items.map((item, idx) => (
