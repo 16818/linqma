@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Trash2, Check } from "lucide-react";
+import { ArrowRight, Trash2, Check, User, Phone, FileText } from "lucide-react";
 import QRCode from "qrcode";
 import { createClient } from "@/lib/supabase/client";
 
@@ -26,6 +26,11 @@ export default function OrderPage({
   const [orderCode, setOrderCode] = useState<string>("");
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [saving, setSaving] = useState(false);
+
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerNote, setCustomerNote] = useState("");
+  const [tableNumber, setTableNumber] = useState("");
 
   useEffect(() => {
     params.then((p) => setSlug(p.slug));
@@ -99,6 +104,10 @@ export default function OrderPage({
         })),
         total: totalPrice,
         status: "pending",
+        customer_name: customerName.trim() || null,
+        customer_phone: customerPhone.trim() || null,
+        customer_note: customerNote.trim() || null,
+        table_number: tableNumber.trim() || null,
       });
     }
 
@@ -211,7 +220,7 @@ export default function OrderPage({
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] font-[Vazirmatn] pb-32" dir="rtl">
+    <div className="min-h-screen bg-[#FAF7F2] font-[Vazirmatn] pb-44" dir="rtl">
       <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-[#EDE8DF]">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <button
@@ -232,7 +241,7 @@ export default function OrderPage({
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 py-4">
+      <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
         <div className="bg-white rounded-2xl border border-[#EDE8DF] overflow-hidden">
           {cart.map((item) => (
             <div
@@ -286,6 +295,72 @@ export default function OrderPage({
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="bg-white rounded-2xl border border-[#EDE8DF] p-4 space-y-4">
+          <h2 className="font-bold text-sm text-[#0F172A]">
+            اطلاعات شما
+          </h2>
+
+          <div>
+            <label className="text-xs font-medium text-[#64748B] flex items-center gap-1.5 mb-1.5">
+              <User className="w-3.5 h-3.5" />
+              نام و نام خانوادگی
+            </label>
+            <input
+              type="text"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="مثلاً علی احمدی"
+              className="w-full h-11 px-4 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-[#D4AF37]"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-[#64748B] flex items-center gap-1.5 mb-1.5">
+              <Phone className="w-3.5 h-3.5" />
+              شماره تماس
+            </label>
+            <input
+              type="tel"
+              value={customerPhone}
+              onChange={(e) =>
+                setCustomerPhone(e.target.value.replace(/\D/g, ""))
+              }
+              placeholder="۰۹۱۲۳۴۵۶۷۸۹"
+              maxLength={11}
+              dir="ltr"
+              className="w-full h-11 px-4 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-[#D4AF37] text-left"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-[#64748B] flex items-center gap-1.5 mb-1.5">
+              <FileText className="w-3.5 h-3.5" />
+              یادداشت
+            </label>
+            <input
+              type="text"
+              value={customerNote}
+              onChange={(e) => setCustomerNote(e.target.value)}
+              placeholder="مثلاً بدون شکر"
+              className="w-full h-11 px-4 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-[#D4AF37]"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-[#64748B] mb-1.5 block">
+              شماره میز
+            </label>
+            <input
+              type="text"
+              value={tableNumber}
+              onChange={(e) => setTableNumber(e.target.value)}
+              placeholder="مثلاً ۵"
+              maxLength={3}
+              className="w-full h-11 px-4 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-[#D4AF37]"
+            />
+          </div>
         </div>
       </div>
 
