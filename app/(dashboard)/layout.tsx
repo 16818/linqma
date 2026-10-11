@@ -28,7 +28,11 @@ const menuGroups = [
   {
     title: "تنظیمات",
     items: [
-      { href: "/dashboard/settings", label: "اطلاعات کسب‌وکار", icon: Settings },
+      {
+        href: "/dashboard/settings",
+        label: "اطلاعات کسب‌وکار",
+        icon: Settings,
+      },
       { href: "/dashboard/settings#qr", label: "QR و انتشار", icon: Sparkles },
     ],
   },
@@ -74,7 +78,7 @@ export default function DashboardLayout({
             </div>
             <div>
               <h1 className="text-lg font-black text-[#D4AF37] leading-none">
-                LINQMA
+                لینکیوما
               </h1>
               <p className="text-[10px] text-white/50 mt-1">پنل مدیریت</p>
             </div>
@@ -145,7 +149,7 @@ export default function DashboardLayout({
             <div className="w-8 h-8 rounded-lg bg-[#D4AF37] flex items-center justify-center">
               <Store className="w-4 h-4 text-[#0F172A]" />
             </div>
-            <h1 className="font-bold text-[#D4AF37] text-sm">LINQMA</h1>
+            <h1 className="font-bold text-[#D4AF37] text-sm">لینکیوما</h1>
           </div>
           <button
             onClick={handleLogout}
