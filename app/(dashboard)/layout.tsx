@@ -9,8 +9,8 @@ import {
   Settings,
   LogOut,
   Store,
-  Sliders,
   ShoppingCart,
+  Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -28,6 +28,7 @@ const menuGroups = [
     title: "عملیات",
     items: [
       { href: "/dashboard/pos", label: "صندوق", icon: ShoppingCart },
+      { href: "/dashboard/orders", label: "سفارش‌ها", icon: Receipt },
     ],
   },
   {
@@ -45,8 +46,8 @@ const menuGroups = [
 const mobileMenuItems = [
   { href: "/dashboard", label: "داشبورد", icon: LayoutDashboard },
   { href: "/dashboard/pos", label: "صندوق", icon: ShoppingCart },
+  { href: "/dashboard/orders", label: "سفارش‌ها", icon: Receipt },
   { href: "/dashboard/products", label: "محصولات", icon: Package },
-  { href: "/dashboard/categories", label: "دسته‌ها", icon: Tags },
 ];
 
 export default function DashboardLayout({
