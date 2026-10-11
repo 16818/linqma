@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Trash2, Check } from "lucide-react";
 import QRCode from "qrcode";
+import { createClient } from "@/lib/supabase/client";
 
 interface CartItem {
   id: string;
@@ -19,10 +20,12 @@ export default function OrderPage({
   params: Promise<{ slug: string }>;
 }) {
   const router = useRouter();
+  const supabase = createClient();
   const [slug, setSlug] = useState<string>("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orderCode, setOrderCode] = useState<string>("");
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     params.then((p) => setSlug(p.slug));
@@ -73,8 +76,32 @@ export default function OrderPage({
 
   const submitOrder = async () => {
     if (cart.length === 0) return;
+    setSaving(true);
 
     const code = Math.random().toString(36).substring(2, 5).toUpperCase();
+
+    const { data: business } = await supabase
+      .from("businesses")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle();
+
+    if (business) {
+      await supabase.from("orders").insert({
+        business_id: business.id,
+        short_code: code,
+        items: cart.map((item) => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          imageUrl: item.imageUrl || null,
+        })),
+        total: totalPrice,
+        status: "pending",
+      });
+    }
+
     setOrderCode(code);
 
     const text = `LINQMA|${code}|${slug}|${totalPrice}`;
@@ -84,6 +111,7 @@ export default function OrderPage({
       color: { dark: "#0F172A", light: "#FFFFFF" },
     });
     setQrDataUrl(dataUrl);
+    setSaving(false);
   };
 
   if (orderCode) {
@@ -278,9 +306,10 @@ export default function OrderPage({
           <button
             type="button"
             onClick={submitOrder}
-            className="w-full h-12 rounded-2xl bg-[#0F172A] text-white font-bold cursor-pointer hover:bg-[#1E293B] transition"
+            disabled={saving}
+            className="w-full h-12 rounded-2xl bg-[#0F172A] text-white font-bold cursor-pointer hover:bg-[#1E293B] transition disabled:opacity-60"
           >
-            ثبت سفارش
+            {saving ? "در حال ثبت..." : "ثبت سفارش"}
           </button>
         </div>
       </div>
