@@ -72,15 +72,17 @@ export default function DashboardLayout({
       {/* سایدبار دسکتاپ */}
       <aside className="hidden md:flex w-64 flex-col bg-[#0F172A] text-white">
         <div className="p-6 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-[#D4AF37] flex items-center justify-center">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-[#D4AF37] flex items-center justify-center shrink-0">
               <Store className="w-5 h-5 text-[#0F172A]" />
             </div>
             <div>
-              <h1 className="text-lg font-black text-[#D4AF37] leading-none">
+              <h1 className="text-base font-black text-[#D4AF37] leading-none">
                 لینکیوما
               </h1>
-              <p className="text-[10px] text-white/50 mt-1">پنل مدیریت</p>
+              <p className="text-[9px] text-white/40 tracking-widest mt-1">
+                LINQMA
+              </p>
             </div>
           </div>
         </div>
@@ -149,7 +151,14 @@ export default function DashboardLayout({
             <div className="w-8 h-8 rounded-lg bg-[#D4AF37] flex items-center justify-center">
               <Store className="w-4 h-4 text-[#0F172A]" />
             </div>
-            <h1 className="font-bold text-[#D4AF37] text-sm">لینکیوما</h1>
+            <div className="flex flex-col">
+              <h1 className="font-bold text-[#D4AF37] text-sm leading-none">
+                لینکیوما
+              </h1>
+              <span className="text-[8px] text-white/40 tracking-widest mt-0.5">
+                LINQMA
+              </span>
+            </div>
           </div>
           <button
             onClick={handleLogout}
