@@ -3,7 +3,19 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Search, Check, X, Clock, User, Phone, FileText } from "lucide-react";
+import {
+  Search,
+  Check,
+  X,
+  Clock,
+  User,
+  Phone,
+  FileText,
+  Trash2,
+  Plus,
+  Minus,
+  Save,
+} from "lucide-react";
 
 interface OrderItem {
   id: string;
@@ -39,6 +51,9 @@ export default function POSPage() {
   const [editTable, setEditTable] = useState("");
   const [savingInfo, setSavingInfo] = useState(false);
 
+  const [editItems, setEditItems] = useState<OrderItem[]>([]);
+  const [savingItems, setSavingItems] = useState(false);
+
   const searchOrder = async () => {
     const cleanCode = code.trim().toUpperCase();
     if (!cleanCode) {
@@ -69,6 +84,7 @@ export default function POSPage() {
     }
 
     setOrder(data);
+    setEditItems(data.items);
     setEditName(data.customer_name || "");
     setEditPhone(data.customer_phone || "");
     setEditNote(data.customer_note || "");
@@ -106,6 +122,57 @@ export default function POSPage() {
     });
   };
 
+  const updateItemQuantity = (idx: number, delta: number) => {
+    setEditItems((prev) =>
+      prev.map((item, i) =>
+        i === idx
+          ? { ...item, quantity: Math.max(0, item.quantity + delta) }
+          : item
+      )
+    );
+  };
+
+  const removeItem = (idx: number) => {
+    setEditItems((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const saveItems = async () => {
+    if (!order) return;
+
+    const filtered = editItems.filter((item) => item.quantity > 0);
+
+    if (filtered.length === 0) {
+      toast.error("سفارش نمی‌تواند خالی باشد. برای حذف کل سفارش از دکمه حذف استفاده کنید");
+      return;
+    }
+
+    setSavingItems(true);
+
+    const newTotal = filtered.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        items: filtered,
+        total: newTotal,
+      })
+      .eq("id", order.id);
+
+    setSavingItems(false);
+
+    if (error) {
+      toast.error("خطا در ذخیره اقلام");
+      return;
+    }
+
+    toast.success("اقلام سفارش به‌روز شد");
+    setOrder({ ...order, items: filtered, total: newTotal });
+    setEditItems(filtered);
+  };
+
   const confirmOrder = async () => {
     if (!order) return;
 
@@ -123,6 +190,21 @@ export default function POSPage() {
     setOrder({ ...order, status: "confirmed" });
   };
 
+  const deleteOrder = async () => {
+    if (!order) return;
+    if (!confirm("آیا از حذف این سفارش مطمئن هستید؟ این کار قابل بازگشت نیست.")) return;
+
+    const { error } = await supabase.from("orders").delete().eq("id", order.id);
+
+    if (error) {
+      toast.error("خطا در حذف سفارش");
+      return;
+    }
+
+    toast.success("سفارش حذف شد");
+    reset();
+  };
+
   const reset = () => {
     setCode("");
     setOrder(null);
@@ -131,7 +213,17 @@ export default function POSPage() {
     setEditPhone("");
     setEditNote("");
     setEditTable("");
+    setEditItems([]);
   };
+
+  const editTotal = editItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+
+  const hasItemsChanged = order
+    ? JSON.stringify(editItems) !== JSON.stringify(order.items)
+    : false;
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -185,22 +277,25 @@ export default function POSPage() {
 
       {order && (
         <div className="space-y-4">
+          {/* کارت اصلی سفارش */}
           <div className="bg-white rounded-3xl border border-[#EDE8DF] overflow-hidden shadow-sm">
-            <div className="p-5 bg-[#0F172A] text-white flex items-center justify-between flex-wrap gap-2">
+            <div className="p-5 bg-[#0F172A] text-white flex items-center justify-between flex-wrap gap-3">
               <div>
-                <p className="text-xs text-white/60">کد سفارش</p>
-                <p className="text-2xl font-black tracking-widest">
+                <p className="text-[10px] text-white/40 tracking-wider">کد سفارش</p>
+                <p className="text-xl font-black tracking-[0.25em] text-white/60">
                   {order.short_code}
                 </p>
               </div>
               {order.table_number && (
                 <div className="text-center">
-                  <p className="text-xs text-white/60">میز</p>
+                  <p className="text-[10px] text-white/40 tracking-wider">میز</p>
                   <p className="text-xl font-black">{order.table_number}</p>
                 </div>
               )}
               <div className="text-left">
-                <p className="text-xs text-white/60">وضعیت</p>
+                <p className="text-[10px] text-white/40 tracking-wider mb-1">
+                  وضعیت
+                </p>
                 <span
                   className={`inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full ${
                     order.status === "confirmed"
@@ -223,53 +318,105 @@ export default function POSPage() {
               </div>
             </div>
 
+            {/* اقلام قابل ویرایش */}
             <div className="p-5 space-y-3">
-              <p className="text-sm font-bold text-navy/70 mb-2">
-                اقلام سفارش
-              </p>
-              {order.items.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-3 py-2 border-b border-[#EDE8DF] last:border-b-0"
-                >
-                  <div className="w-10 h-10 rounded-xl overflow-hidden bg-[#F5F0E8] shrink-0">
-                    {item.imageUrl ? (
-                      <img
-                        src={item.imageUrl}
-                        alt={item.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[10px] text-navy/30">
-                        —
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-navy truncate">
-                      {item.name}
-                    </p>
-                    <p className="text-xs text-navy/50">
-                      {item.price.toLocaleString("fa-IR")} تومان ×{" "}
-                      {item.quantity}
-                    </p>
-                  </div>
-                  <p className="font-black text-sm text-navy shrink-0">
-                    {(item.price * item.quantity).toLocaleString("fa-IR")}
-                  </p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-bold text-navy/70">
+                  اقلام سفارش (قابل ویرایش)
+                </p>
+                {hasItemsChanged && (
+                  <button
+                    onClick={saveItems}
+                    disabled={savingItems}
+                    className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl bg-gold text-white cursor-pointer hover:bg-gold-dark transition disabled:opacity-60"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    {savingItems ? "..." : "ذخیره تغییرات"}
+                  </button>
+                )}
+              </div>
+
+              {editItems.length === 0 ? (
+                <div className="text-center py-6 text-navy/40 text-sm">
+                  سفارش خالی است
                 </div>
-              ))}
+              ) : (
+                editItems.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-3 py-2 border-b border-[#EDE8DF] last:border-b-0"
+                  >
+                    <div className="w-10 h-10 rounded-xl overflow-hidden bg-[#F5F0E8] shrink-0">
+                      {item.imageUrl ? (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[10px] text-navy/30">
+                          —
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-navy truncate">
+                        {item.name}
+                      </p>
+                      <p className="text-xs text-navy/50">
+                        {item.price.toLocaleString("fa-IR")} تومان
+                      </p>
+                    </div>
+
+                    {/* کنترل تعداد */}
+                    <div className="flex items-center gap-1 bg-[#F5F0E8] rounded-xl p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => updateItemQuantity(idx, -1)}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-navy hover:bg-white cursor-pointer"
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="text-sm font-bold w-6 text-center">
+                        {item.quantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => updateItemQuantity(idx, 1)}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-navy hover:bg-white cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <p className="font-black text-sm text-navy shrink-0 w-20 text-left">
+                      {(item.price * item.quantity).toLocaleString("fa-IR")}
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => removeItem(idx)}
+                      className="p-1.5 text-navy/30 hover:text-red-500 cursor-pointer"
+                      aria-label="حذف"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))
+              )}
 
               <div className="pt-3 flex items-center justify-between border-t-2 border-[#EDE8DF] mt-3">
                 <span className="text-sm font-bold text-navy/70">جمع کل</span>
                 <span className="font-black text-2xl text-gold">
-                  {order.total.toLocaleString("fa-IR")}
+                  {editTotal.toLocaleString("fa-IR")}
                   <span className="text-xs mr-1">تومان</span>
                 </span>
               </div>
             </div>
           </div>
 
+          {/* اطلاعات مشتری */}
           <div className="bg-white rounded-3xl border border-[#EDE8DF] p-5 shadow-sm">
             <h3 className="font-bold text-sm text-navy mb-4">
               اطلاعات مشتری
@@ -346,23 +493,34 @@ export default function POSPage() {
             </button>
           </div>
 
-          <div className="bg-white rounded-3xl border border-[#EDE8DF] p-5 shadow-sm flex gap-2">
-            <button
-              onClick={reset}
-              className="flex-1 h-12 rounded-2xl bg-white border border-[#EDE8DF] text-navy font-bold cursor-pointer hover:bg-[#EFE9DF] transition flex items-center justify-center gap-2"
-            >
-              <X className="w-4 h-4" />
-              سفارش جدید
-            </button>
-            {order.status !== "confirmed" && (
+          {/* دکمه‌های اصلی */}
+          <div className="bg-white rounded-3xl border border-[#EDE8DF] p-5 shadow-sm space-y-2">
+            <div className="flex gap-2">
               <button
-                onClick={confirmOrder}
-                className="flex-1 h-12 rounded-2xl bg-gold text-white font-bold cursor-pointer hover:bg-gold-dark transition flex items-center justify-center gap-2"
+                onClick={reset}
+                className="flex-1 h-12 rounded-2xl bg-white border border-[#EDE8DF] text-navy font-bold cursor-pointer hover:bg-[#EFE9DF] transition flex items-center justify-center gap-2"
               >
-                <Check className="w-4 h-4" />
-                تأیید سفارش
+                <X className="w-4 h-4" />
+                سفارش جدید
               </button>
-            )}
+              {order.status !== "confirmed" && (
+                <button
+                  onClick={confirmOrder}
+                  className="flex-1 h-12 rounded-2xl bg-gold text-white font-bold cursor-pointer hover:bg-gold-dark transition flex items-center justify-center gap-2"
+                >
+                  <Check className="w-4 h-4" />
+                  تأیید سفارش
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={deleteOrder}
+              className="w-full h-11 rounded-2xl bg-white border border-red-200 text-red-600 font-bold text-sm cursor-pointer hover:bg-red-50 transition flex items-center justify-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              حذف کامل سفارش
+            </button>
           </div>
         </div>
       )}
