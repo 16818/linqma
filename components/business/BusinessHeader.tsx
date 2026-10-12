@@ -128,18 +128,18 @@ export function BusinessHeader({
           type="button"
           onClick={handleShare}
           aria-label="اشتراک‌گذاری"
-          className="absolute top-3 left-3 w-10 h-10 rounded-full bg-white/95 backdrop-blur flex items-center justify-center shadow-md cursor-pointer hover:bg-white transition"
+          className="absolute top-3 left-3 w-10 h-10 rounded-full bg-white/95 backdrop-blur flex items-center justify-center shadow-md cursor-pointer hover:bg-white transition z-20"
         >
           <Share2 className="w-4 h-4 text-[#0F172A]" />
         </button>
       </div>
 
       {/* کارت اصلی */}
-      <div className="max-w-3xl mx-auto px-4 -mt-14 sm:-mt-16 relative z-10">
-        <div className="bg-white rounded-3xl shadow-[0_8px_30px_-8px_rgba(0,0,0,0.12)] border border-[#EDE8DF] p-5 sm:p-7">
-          {/* لوگو + نام — وسط‌چین */}
-          <div className="flex flex-col items-center text-center">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white bg-white shadow-[0_4px_20px_-4px_rgba(0,0,0,0.15)] overflow-hidden -mt-16 sm:-mt-20">
+      <div className="max-w-3xl mx-auto px-4 -mt-16 sm:-mt-20 relative z-10">
+        <div className="bg-white rounded-[2rem] shadow-[0_20px_60px_-20px_rgba(0,0,0,0.18)] border border-[#EDE8DF]/60 p-5 sm:p-8">
+          {/* لوگو */}
+          <div className="flex justify-center">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-[5px] border-white bg-white shadow-[0_10px_30px_-8px_rgba(0,0,0,0.25)] overflow-hidden -mt-20 sm:-mt-24 ring-1 ring-[#EDE8DF]">
               {logoUrl ? (
                 <img
                   src={logoUrl}
@@ -147,87 +147,89 @@ export function BusinessHeader({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-[#F7F6F3] text-[#D4AF37] font-black text-2xl">
+                <div className="w-full h-full flex items-center justify-center bg-[#F7F6F3] text-[#D4AF37] font-black text-3xl">
                   {name.charAt(0)}
                 </div>
               )}
             </div>
+          </div>
 
-            <h1 className="mt-3 text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight leading-tight">
+          {/* نام + وضعیت */}
+          <div className="mt-4 text-center">
+            <h1 className="text-[22px] sm:text-[28px] font-black text-[#0F172A] tracking-tight leading-tight">
               {name}
             </h1>
 
             {description && (
-              <p className="mt-1.5 text-[13px] sm:text-sm text-[#64748B] leading-relaxed max-w-md">
+              <p className="mt-2 text-[13px] sm:text-[14px] text-[#64748B] leading-relaxed max-w-md mx-auto">
                 {description}
               </p>
             )}
 
             {openStatus && (
-              <span
-                className={`mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-full ${
-                  openStatus.isOpen
-                    ? "bg-green-100 text-green-700"
-                    : "bg-red-100 text-red-600"
-                }`}
-              >
+              <div className="mt-3 flex justify-center">
                 <span
-                  className={`w-1.5 h-1.5 rounded-full ${
+                  className={`inline-flex items-center gap-2 text-[11px] font-bold px-3.5 py-1.5 rounded-full ${
                     openStatus.isOpen
-                      ? "bg-green-500 animate-pulse"
-                      : "bg-red-500"
+                      ? "bg-[#DCFCE7] text-[#166534]"
+                      : "bg-[#FEE2E2] text-[#991B1B]"
                   }`}
-                />
-                {openStatus.label}
-              </span>
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      openStatus.isOpen
+                        ? "bg-[#22C55E] animate-pulse"
+                        : "bg-[#EF4444]"
+                    }`}
+                  />
+                  {openStatus.label}
+                </span>
+              </div>
             )}
           </div>
 
-          {/* آیکون‌های تماس — وسط‌چین */}
-          <div className="mt-5 pt-4 border-t border-[#EDE8DF] flex flex-wrap items-center justify-center gap-2">
+          {/* دکمه‌های تماس */}
+          <div className="mt-6 pt-5 border-t border-[#EDE8DF]/70 flex flex-wrap items-center justify-center gap-2">
             {address && (
               <button
                 type="button"
                 onClick={() => toggle("address")}
-                className={`flex items-center gap-2 h-10 px-3.5 rounded-full border text-xs font-medium transition-all cursor-pointer ${
+                className={`flex items-center gap-2 h-10 px-4 rounded-full border text-[12px] font-bold transition-all cursor-pointer ${
                   open === "address"
                     ? "bg-[#D4AF37] border-[#D4AF37] text-white shadow-md"
-                    : "bg-white border-[#EDE8DF] text-[#0F172A] hover:border-[#D4AF37]"
+                    : "bg-[#FAF7F2] border-[#EDE8DF] text-[#0F172A] hover:border-[#D4AF37] hover:bg-white"
                 }`}
-                aria-label="آدرس"
               >
                 <MapPin className="w-4 h-4" />
-                <span className="hidden sm:inline">آدرس</span>
+                <span>آدرس</span>
               </button>
             )}
             {workingHours && (
               <button
                 type="button"
                 onClick={() => toggle("hours")}
-                className={`flex items-center gap-2 h-10 px-3.5 rounded-full border text-xs font-medium transition-all cursor-pointer ${
+                className={`flex items-center gap-2 h-10 px-4 rounded-full border text-[12px] font-bold transition-all cursor-pointer ${
                   open === "hours"
                     ? "bg-[#D4AF37] border-[#D4AF37] text-white shadow-md"
-                    : "bg-white border-[#EDE8DF] text-[#0F172A] hover:border-[#D4AF37]"
+                    : "bg-[#FAF7F2] border-[#EDE8DF] text-[#0F172A] hover:border-[#D4AF37] hover:bg-white"
                 }`}
-                aria-label="ساعات کاری"
               >
                 <Clock className="w-4 h-4" />
-                <span className="hidden sm:inline">ساعات</span>
+                <span>ساعات</span>
               </button>
             )}
             {phone && (
               <button
                 type="button"
                 onClick={() => toggle("phone")}
-                className={`flex items-center gap-2 h-10 px-3.5 rounded-full border text-xs font-medium transition-all cursor-pointer ${
+                className={`flex items-center gap-2 h-10 px-4 rounded-full border text-[12px] font-bold transition-all cursor-pointer ${
                   open === "phone"
                     ? "bg-[#D4AF37] border-[#D4AF37] text-white shadow-md"
-                    : "bg-white border-[#EDE8DF] text-[#0F172A] hover:border-[#D4AF37]"
+                    : "bg-[#FAF7F2] border-[#EDE8DF] text-[#0F172A] hover:border-[#D4AF37] hover:bg-white"
                 }`}
-                aria-label="تلفن"
               >
                 <Phone className="w-4 h-4" />
-                <span className="hidden sm:inline">تماس</span>
+                <span>تماس</span>
               </button>
             )}
 
@@ -240,7 +242,7 @@ export function BusinessHeader({
                 }
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full border border-[#EDE8DF] bg-white flex items-center justify-center hover:border-[#D4AF37] transition-colors cursor-pointer"
+                className="w-10 h-10 rounded-full border border-[#EDE8DF] bg-[#FAF7F2] flex items-center justify-center hover:border-[#D4AF37] hover:bg-white transition-colors cursor-pointer"
                 aria-label="اینستاگرام"
               >
                 <Instagram className="w-4 h-4" />
@@ -255,7 +257,7 @@ export function BusinessHeader({
                 }
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full border border-[#EDE8DF] bg-white flex items-center justify-center text-[10px] font-bold hover:border-[#D4AF37] transition-colors cursor-pointer"
+                className="w-10 h-10 rounded-full border border-[#EDE8DF] bg-[#FAF7F2] flex items-center justify-center text-[10px] font-bold hover:border-[#D4AF37] hover:bg-white transition-colors cursor-pointer"
                 aria-label="تلگرام"
               >
                 TG
@@ -270,7 +272,7 @@ export function BusinessHeader({
                 }
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full border border-[#EDE8DF] bg-white flex items-center justify-center text-[10px] font-bold hover:border-[#25D366] transition-colors cursor-pointer"
+                className="w-10 h-10 rounded-full border border-[#EDE8DF] bg-[#FAF7F2] flex items-center justify-center text-[10px] font-bold hover:border-[#25D366] hover:bg-white transition-colors cursor-pointer"
                 aria-label="واتساپ"
               >
                 WA
@@ -284,12 +286,12 @@ export function BusinessHeader({
               {open === "phone" ? (
                 <a
                   href={`tel:${phone}`}
-                  className="block text-center text-sm font-medium text-[#0F172A] bg-[#F7F6F3] border border-[#EDE8DF] rounded-2xl px-4 py-3 cursor-pointer hover:bg-[#EFE9DF] transition"
+                  className="block text-center text-sm font-medium text-[#0F172A] bg-[#FAF7F2] border border-[#EDE8DF] rounded-2xl px-4 py-3 cursor-pointer hover:bg-[#EFE9DF] transition"
                 >
                   📞 {detailText}
                 </a>
               ) : (
-                <div className="text-center text-sm text-[#475569] bg-[#F7F6F3] border border-[#EDE8DF] rounded-2xl px-4 py-3">
+                <div className="text-center text-sm text-[#475569] bg-[#FAF7F2] border border-[#EDE8DF] rounded-2xl px-4 py-3 leading-relaxed">
                   {open === "address" && "📍 "}
                   {open === "hours" && "🕐 "}
                   {detailText}
