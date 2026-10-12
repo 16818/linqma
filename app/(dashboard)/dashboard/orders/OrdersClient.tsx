@@ -1,12 +1,24 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, Search, Clock, Check, Package, User, Phone, FileText } from "lucide-react";
+import {
+  Download,
+  Search,
+  Clock,
+  Check,
+  Package,
+  User,
+  Phone,
+  FileText,
+  Trash2,
+} from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
 
 interface OrderItem {
   id: string;
@@ -34,11 +46,13 @@ export function OrdersClient({
 }: {
   initialOrders: Order[];
 }) {
-  const [orders] = useState(initialOrders);
+  const [orders, setOrders] = useState(initialOrders);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<
     "all" | "pending" | "confirmed"
   >("all");
+  const router = useRouter();
+  const supabase = createClient();
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -53,6 +67,39 @@ export function OrdersClient({
       return matchesSearch && matchesStatus;
     });
   }, [orders, searchQuery, statusFilter]);
+
+  const handleDelete = async (id: string, code: string) => {
+    if (!confirm(`آیا از حذف سفارش ${code} مطمئن هستید؟`)) return;
+
+    const { error } = await supabase.from("orders").delete().eq("id", id);
+
+    if (error) {
+      toast.error("خطا در حذف سفارش");
+      return;
+    }
+
+    setOrders((prev) => prev.filter((o) => o.id !== id));
+    toast.success("سفارش حذف شد");
+    router.refresh();
+  };
+
+  const handleConfirm = async (id: string) => {
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: "confirmed" })
+      .eq("id", id);
+
+    if (error) {
+      toast.error("خطا در تأیید سفارش");
+      return;
+    }
+
+    setOrders((prev) =>
+      prev.map((o) => (o.id === id ? { ...o, status: "confirmed" } : o))
+    );
+    toast.success("سفارش تأیید شد");
+    router.refresh();
+  };
 
   const handleDownload = () => {
     if (filteredOrders.length === 0) {
@@ -311,14 +358,34 @@ export function OrdersClient({
                   ))}
                 </div>
 
-                <div className="flex items-center justify-between pt-3 border-t border-[#EDE8DF]">
+                <div className="flex items-center justify-between pt-3 border-t border-[#EDE8DF] gap-2 flex-wrap">
                   <span className="text-xs text-navy/60">جمع کل</span>
-                  <span className="font-black text-gold">
-                    {order.total.toLocaleString("fa-IR")}
-                    <span className="text-xs mr-1 font-normal text-navy/60">
-                      تومان
+                  <div className="flex items-center gap-3">
+                    <span className="font-black text-gold">
+                      {order.total.toLocaleString("fa-IR")}
+                      <span className="text-xs mr-1 font-normal text-navy/60">
+                        تومان
+                      </span>
                     </span>
-                  </span>
+
+                    {order.status !== "confirmed" && (
+                      <button
+                        onClick={() => handleConfirm(order.id)}
+                        className="h-8 px-3 rounded-xl bg-green-100 text-green-700 text-xs font-bold cursor-pointer hover:bg-green-200 transition flex items-center gap-1"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        تأیید
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => handleDelete(order.id, order.short_code)}
+                      className="h-8 px-3 rounded-xl bg-red-50 text-red-600 text-xs font-bold cursor-pointer hover:bg-red-100 transition flex items-center gap-1"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      حذف
+                    </button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
