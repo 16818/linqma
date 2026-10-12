@@ -1,8 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { CategoriesClient } from "./CategoriesClient";
+import { AdminModeBanner } from "@/components/dashboard/AdminModeBanner";
 
-export default async function CategoriesPage() {
+export default async function CategoriesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ business?: string }>;
+}) {
   const supabase = await createClient();
 
   const {
@@ -11,15 +16,55 @@ export default async function CategoriesPage() {
 
   if (!user) redirect("/login");
 
-  const { data: business } = await supabase
-    .from("businesses")
-    .select("id, name, slug, is_published")
-    .eq("owner_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const { business: businessParam } = await searchParams;
 
-  if (!business) redirect("/dashboard/onboarding");
+  let business: {
+    id: string;
+    name: string;
+    slug: string;
+    is_published: boolean;
+  } | null = null;
+
+  let isAdminMode = false;
+
+  if (businessParam) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const isAdmin = profile?.role === "admin";
+
+    if (isAdmin) {
+      const { data: targetBusiness } = await supabase
+        .from("businesses")
+        .select("id, name, slug, is_published")
+        .eq("id", businessParam)
+        .maybeSingle();
+
+      if (targetBusiness) {
+        business = targetBusiness;
+        isAdminMode = true;
+      }
+    }
+  }
+
+  if (!business) {
+    const { data: ownBusiness } = await supabase
+      .from("businesses")
+      .select("id, name, slug, is_published")
+      .eq("owner_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    business = ownBusiness;
+  }
+
+  if (!business) {
+    redirect("/dashboard/onboarding");
+  }
 
   const { data: categories } = await supabase
     .from("categories")
@@ -28,9 +73,17 @@ export default async function CategoriesPage() {
     .order("sort_order");
 
   return (
-    <CategoriesClient
-      initialCategories={categories || []}
-      businessId={business.id}
-    />
+    <>
+      {isAdminMode && (
+        <AdminModeBanner
+          businessName={business.name}
+          businessId={business.id}
+        />
+      )}
+      <CategoriesClient
+        initialCategories={categories || []}
+        businessId={business.id}
+      />
+    </>
   );
 }

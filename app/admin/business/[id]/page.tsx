@@ -2,7 +2,14 @@ import { redirect, notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-admin";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { ArrowRight, Store } from "lucide-react";
+import {
+  ArrowRight,
+  Store,
+  Package,
+  ShoppingBag,
+  Tags,
+  Settings,
+} from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +51,6 @@ export default async function AdminBusinessPage({
     .order("created_at", { ascending: false })
     .limit(10);
 
-  const activeProducts = (products || []).filter((p) => p.is_active);
   const pendingOrders = (orders || []).filter((o) => o.status === "pending");
   const totalRevenue = (orders || [])
     .filter((o) => o.status === "confirmed")
@@ -113,7 +119,10 @@ export default async function AdminBusinessPage({
                   پلن: {business.plan || "basic"}
                 </span>
                 {business.phone && (
-                  <span className="px-2 py-1 rounded-lg bg-[#FAF7F2] text-[#0F172A]" dir="ltr">
+                  <span
+                    className="px-2 py-1 rounded-lg bg-[#FAF7F2] text-[#0F172A]"
+                    dir="ltr"
+                  >
                     {business.phone}
                   </span>
                 )}
@@ -157,6 +166,60 @@ export default async function AdminBusinessPage({
           </div>
         </div>
 
+        {/* کارهای سریع */}
+        <div className="bg-white rounded-3xl border border-[#EDE8DF] p-5">
+          <h2 className="font-bold text-[#0F172A] mb-4">دسترسی سریع</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Link
+              href={`/dashboard/products?business=${business.id}`}
+              className="bg-[#FAF7F2] rounded-2xl border border-[#EDE8DF] p-4 flex flex-col items-center gap-2 hover:border-[#D4AF37] hover:bg-white transition group"
+            >
+              <div className="w-12 h-12 rounded-full bg-[#D4AF37]/10 flex items-center justify-center group-hover:bg-[#D4AF37] transition-colors">
+                <Package className="w-5 h-5 text-[#D4AF37] group-hover:text-white transition-colors" />
+              </div>
+              <span className="text-xs font-bold text-[#0F172A] text-center">
+                مدیریت محصولات
+              </span>
+            </Link>
+
+            <Link
+              href={`/dashboard/categories?business=${business.id}`}
+              className="bg-[#FAF7F2] rounded-2xl border border-[#EDE8DF] p-4 flex flex-col items-center gap-2 hover:border-[#D4AF37] hover:bg-white transition group"
+            >
+              <div className="w-12 h-12 rounded-full bg-[#D4AF37]/10 flex items-center justify-center group-hover:bg-[#D4AF37] transition-colors">
+                <Tags className="w-5 h-5 text-[#D4AF37] group-hover:text-white transition-colors" />
+              </div>
+              <span className="text-xs font-bold text-[#0F172A] text-center">
+                مدیریت دسته‌ها
+              </span>
+            </Link>
+
+            <Link
+              href={`/dashboard/settings?business=${business.id}`}
+              className="bg-[#FAF7F2] rounded-2xl border border-[#EDE8DF] p-4 flex flex-col items-center gap-2 hover:border-[#D4AF37] hover:bg-white transition group"
+            >
+              <div className="w-12 h-12 rounded-full bg-[#D4AF37]/10 flex items-center justify-center group-hover:bg-[#D4AF37] transition-colors">
+                <Settings className="w-5 h-5 text-[#D4AF37] group-hover:text-white transition-colors" />
+              </div>
+              <span className="text-xs font-bold text-[#0F172A] text-center">
+                تنظیمات
+              </span>
+            </Link>
+
+            <Link
+              href={`/dashboard/orders?business=${business.id}`}
+              className="bg-[#FAF7F2] rounded-2xl border border-[#EDE8DF] p-4 flex flex-col items-center gap-2 hover:border-[#D4AF37] hover:bg-white transition group"
+            >
+              <div className="w-12 h-12 rounded-full bg-[#D4AF37]/10 flex items-center justify-center group-hover:bg-[#D4AF37] transition-colors">
+                <ShoppingBag className="w-5 h-5 text-[#D4AF37] group-hover:text-white transition-colors" />
+              </div>
+              <span className="text-xs font-bold text-[#0F172A] text-center">
+                مشاهده سفارش‌ها
+              </span>
+            </Link>
+          </div>
+        </div>
+
         {/* آخرین سفارش‌ها */}
         {orders && orders.length > 0 && (
           <div className="bg-white rounded-3xl border border-[#EDE8DF] p-5">
@@ -196,34 +259,6 @@ export default async function AdminBusinessPage({
             </div>
           </div>
         )}
-
-        {/* راهنمای مدیر */}
-        <div className="bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-3xl p-5">
-          <h3 className="font-bold text-[#0B1B33] mb-2">
-            شما در حالت مدیر هستید
-          </h3>
-          <p className="text-sm text-[#0B1B33]/70 leading-relaxed">
-            این صفحه فقط برای مشاهده اطلاعات کسب‌وکار است. برای ویرایش
-            محصولات، دسته‌ها، یا تنظیمات، باید به پنل خود صاحب کسب‌وکار
-            دسترسی داشته باشید.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Link
-              href="/dashboard/products"
-              className="h-9 px-4 rounded-xl bg-white border border-[#EDE8DF] text-xs font-bold flex items-center gap-1.5 hover:border-[#D4AF37] transition"
-            >
-              <Package className="w-3.5 h-3.5" />
-              مدیریت محصولات
-            </Link>
-            <Link
-              href="/dashboard/orders"
-              className="h-9 px-4 rounded-xl bg-white border border-[#EDE8DF] text-xs font-bold flex items-center gap-1.5 hover:border-[#D4AF37] transition"
-            >
-              <ShoppingBag className="w-3.5 h-3.5" />
-              مشاهده سفارش‌ها
-            </Link>
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import {
@@ -16,6 +16,7 @@ import {
   Minus,
   Save,
 } from "lucide-react";
+import { AdminModeBanner } from "@/components/dashboard/AdminModeBanner";
 
 interface OrderItem {
   id: string;
@@ -38,12 +39,21 @@ interface Order {
   table_number?: string | null;
 }
 
-export default function POSPage() {
+export default function POSPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ business?: string }>;
+}) {
   const supabase = createClient();
   const [code, setCode] = useState("");
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(false);
   const [notFound, setNotFound] = useState(false);
+
+  const [businessId, setBusinessId] = useState<string | null>(null);
+  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [businessName, setBusinessName] = useState<string>("");
+  const [ready, setReady] = useState(false);
 
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
@@ -53,6 +63,64 @@ export default function POSPage() {
 
   const [editItems, setEditItems] = useState<OrderItem[]>([]);
   const [savingItems, setSavingItems] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const sp = await searchParams;
+      const businessParam = sp.business;
+
+      if (businessParam) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          if (profile?.role === "admin") {
+            const { data: targetBusiness } = await supabase
+              .from("businesses")
+              .select("id, name")
+              .eq("id", businessParam)
+              .maybeSingle();
+
+            if (targetBusiness) {
+              setBusinessId(targetBusiness.id);
+              setBusinessName(targetBusiness.name);
+              setIsAdminMode(true);
+              setReady(true);
+              return;
+            }
+          }
+        }
+      }
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: ownBusiness } = await supabase
+          .from("businesses")
+          .select("id, name")
+          .eq("owner_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (ownBusiness) {
+          setBusinessId(ownBusiness.id);
+          setBusinessName(ownBusiness.name);
+        }
+      }
+
+      setReady(true);
+    })();
+  }, [searchParams, supabase]);
 
   const searchOrder = async () => {
     const cleanCode = code.trim().toUpperCase();
@@ -65,11 +133,16 @@ export default function POSPage() {
     setNotFound(false);
     setOrder(null);
 
-    const { data, error } = await supabase
+    const query = supabase
       .from("orders")
       .select("*")
-      .eq("short_code", cleanCode)
-      .maybeSingle();
+      .eq("short_code", cleanCode);
+
+    if (businessId) {
+      query.eq("business_id", businessId);
+    }
+
+    const { data, error } = await query.maybeSingle();
 
     setLoading(false);
 
@@ -142,7 +215,9 @@ export default function POSPage() {
     const filtered = editItems.filter((item) => item.quantity > 0);
 
     if (filtered.length === 0) {
-      toast.error("سفارش نمی‌تواند خالی باشد. برای حذف کل سفارش از دکمه حذف استفاده کنید");
+      toast.error(
+        "سفارش نمی‌تواند خالی باشد. برای حذف کل سفارش از دکمه حذف استفاده کنید"
+      );
       return;
     }
 
@@ -192,7 +267,12 @@ export default function POSPage() {
 
   const deleteOrder = async () => {
     if (!order) return;
-    if (!confirm("آیا از حذف این سفارش مطمئن هستید؟ این کار قابل بازگشت نیست.")) return;
+    if (
+      !confirm(
+        "آیا از حذف این سفارش مطمئن هستید؟ این کار قابل بازگشت نیست."
+      )
+    )
+      return;
 
     const { error } = await supabase.from("orders").delete().eq("id", order.id);
 
@@ -225,8 +305,23 @@ export default function POSPage() {
     ? JSON.stringify(editItems) !== JSON.stringify(order.items)
     : false;
 
+  if (!ready) {
+    return (
+      <div className="max-w-3xl space-y-6">
+        <div className="text-center py-16 text-navy/50">در حال بارگذاری...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-3xl space-y-6">
+      {isAdminMode && (
+        <AdminModeBanner
+          businessName={businessName}
+          businessId={businessId || ""}
+        />
+      )}
+
       <div>
         <h1 className="text-2xl font-bold text-navy">صندوق</h1>
         <p className="text-navy/60 text-sm mt-1">
@@ -281,14 +376,18 @@ export default function POSPage() {
           <div className="bg-white rounded-3xl border border-[#EDE8DF] overflow-hidden shadow-sm">
             <div className="p-5 bg-[#0F172A] text-white flex items-center justify-between flex-wrap gap-3">
               <div>
-                <p className="text-[10px] text-white/40 tracking-wider">کد سفارش</p>
+                <p className="text-[10px] text-white/40 tracking-wider">
+                  کد سفارش
+                </p>
                 <p className="text-xl font-black tracking-[0.25em] text-white/60">
                   {order.short_code}
                 </p>
               </div>
               {order.table_number && (
                 <div className="text-center">
-                  <p className="text-[10px] text-white/40 tracking-wider">میز</p>
+                  <p className="text-[10px] text-white/40 tracking-wider">
+                    میز
+                  </p>
                   <p className="text-xl font-black">{order.table_number}</p>
                 </div>
               )}
@@ -369,7 +468,6 @@ export default function POSPage() {
                       </p>
                     </div>
 
-                    {/* کنترل تعداد */}
                     <div className="flex items-center gap-1 bg-[#F5F0E8] rounded-xl p-0.5">
                       <button
                         type="button"

@@ -1,11 +1,25 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
-import { Package, Tags, Eye, EyeOff, QrCode, Plus, ExternalLink, Settings } from "lucide-react";
+import {
+  Package,
+  Tags,
+  Eye,
+  EyeOff,
+  QrCode,
+  Plus,
+  ExternalLink,
+  Settings,
+} from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { AdminModeBanner } from "@/components/dashboard/AdminModeBanner";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ business?: string }>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -13,13 +27,51 @@ export default async function DashboardPage() {
 
   if (!user) redirect("/login");
 
-  const { data: business } = await supabase
-    .from("businesses")
-    .select("id, name, slug, is_published")
-    .eq("owner_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const { business: businessParam } = await searchParams;
+
+  let business: {
+    id: string;
+    name: string;
+    slug: string;
+    is_published: boolean;
+  } | null = null;
+
+  let isAdminMode = false;
+
+  if (businessParam) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const isAdmin = profile?.role === "admin";
+
+    if (isAdmin) {
+      const { data: targetBusiness } = await supabase
+        .from("businesses")
+        .select("id, name, slug, is_published")
+        .eq("id", businessParam)
+        .maybeSingle();
+
+      if (targetBusiness) {
+        business = targetBusiness;
+        isAdminMode = true;
+      }
+    }
+  }
+
+  if (!business) {
+    const { data: ownBusiness } = await supabase
+      .from("businesses")
+      .select("id, name, slug, is_published")
+      .eq("owner_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    business = ownBusiness;
+  }
 
   if (!business) {
     redirect("/dashboard/onboarding");
@@ -49,8 +101,17 @@ export default async function DashboardPage() {
 
   const unavailableCount = (productsCount || 0) - (availableCount || 0);
 
+  const qs = isAdminMode ? `?business=${business.id}` : "";
+
   return (
     <div className="space-y-6 max-w-5xl">
+      {isAdminMode && (
+        <AdminModeBanner
+          businessName={business.name}
+          businessId={business.id}
+        />
+      )}
+
       <div>
         <h1 className="text-2xl font-bold text-navy">
           سلام، {business.name} 👋
@@ -133,7 +194,7 @@ export default async function DashboardPage() {
               به‌روزرسانی کنید تا مشتری‌ها سردرگم نشوند
             </p>
           </div>
-          <Link href="/dashboard/products">
+          <Link href={`/dashboard/products${qs}`}>
             <Button variant="outline" className="text-xs h-8">
               مشاهده
             </Button>
@@ -144,7 +205,7 @@ export default async function DashboardPage() {
       <div>
         <h2 className="text-sm font-bold text-navy/70 mb-3">کارهای سریع</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Link href="/dashboard/products">
+          <Link href={`/dashboard/products${qs}`}>
             <div className="bg-white rounded-2xl border border-[#EDE8DF] p-4 flex flex-col items-center gap-2 hover:border-[#D4AF37] transition-all cursor-pointer group">
               <div className="w-12 h-12 rounded-full bg-[#D4AF37]/10 flex items-center justify-center group-hover:bg-[#D4AF37] transition-colors">
                 <Plus className="w-5 h-5 text-[#D4AF37] group-hover:text-white transition-colors" />
@@ -155,7 +216,7 @@ export default async function DashboardPage() {
             </div>
           </Link>
 
-          <Link href="/dashboard/categories">
+          <Link href={`/dashboard/categories${qs}`}>
             <div className="bg-white rounded-2xl border border-[#EDE8DF] p-4 flex flex-col items-center gap-2 hover:border-[#D4AF37] transition-all cursor-pointer group">
               <div className="w-12 h-12 rounded-full bg-[#D4AF37]/10 flex items-center justify-center group-hover:bg-[#D4AF37] transition-colors">
                 <Tags className="w-5 h-5 text-[#D4AF37] group-hover:text-white transition-colors" />
@@ -166,7 +227,7 @@ export default async function DashboardPage() {
             </div>
           </Link>
 
-          <Link href="/dashboard/settings">
+          <Link href={`/dashboard/settings${qs}`}>
             <div className="bg-white rounded-2xl border border-[#EDE8DF] p-4 flex flex-col items-center gap-2 hover:border-[#D4AF37] transition-all cursor-pointer group">
               <div className="w-12 h-12 rounded-full bg-[#D4AF37]/10 flex items-center justify-center group-hover:bg-[#D4AF37] transition-colors">
                 <QrCode className="w-5 h-5 text-[#D4AF37] group-hover:text-white transition-colors" />
@@ -189,7 +250,7 @@ export default async function DashboardPage() {
               </div>
             </Link>
           ) : (
-            <Link href="/dashboard/settings">
+            <Link href={`/dashboard/settings${qs}`}>
               <div className="bg-white rounded-2xl border border-dashed border-[#EDE8DF] p-4 flex flex-col items-center gap-2 hover:border-[#D4AF37] transition-all cursor-pointer group">
                 <div className="w-12 h-12 rounded-full bg-[#D4AF37]/10 flex items-center justify-center">
                   <EyeOff className="w-5 h-5 text-[#D4AF37]" />

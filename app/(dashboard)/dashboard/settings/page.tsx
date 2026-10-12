@@ -1,8 +1,13 @@
 ﻿import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { SettingsClient } from "./SettingsClient";
+import { AdminModeBanner } from "@/components/dashboard/AdminModeBanner";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ business?: string }>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -10,17 +15,59 @@ export default async function SettingsPage() {
 
   if (!user) redirect("/login");
 
-  const { data: business } = await supabase
-    .from("businesses")
-    .select("*")
-    .eq("owner_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const { business: businessParam } = await searchParams;
+
+  let business: any = null;
+  let isAdminMode = false;
+
+  if (businessParam) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const isAdmin = profile?.role === "admin";
+
+    if (isAdmin) {
+      const { data: targetBusiness } = await supabase
+        .from("businesses")
+        .select("*")
+        .eq("id", businessParam)
+        .maybeSingle();
+
+      if (targetBusiness) {
+        business = targetBusiness;
+        isAdminMode = true;
+      }
+    }
+  }
+
+  if (!business) {
+    const { data: ownBusiness } = await supabase
+      .from("businesses")
+      .select("*")
+      .eq("owner_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    business = ownBusiness;
+  }
 
   if (!business || !business.name || !business.slug) {
     redirect("/dashboard/onboarding");
   }
 
-  return <SettingsClient business={business} />;
+  return (
+    <>
+      {isAdminMode && (
+        <AdminModeBanner
+          businessName={business.name}
+          businessId={business.id}
+        />
+      )}
+      <SettingsClient business={business} />
+    </>
+  );
 }

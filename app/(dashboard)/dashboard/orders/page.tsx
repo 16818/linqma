@@ -1,8 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { OrdersClient } from "./OrdersClient";
+import { AdminModeBanner } from "@/components/dashboard/AdminModeBanner";
 
-export default async function OrdersPage() {
+export default async function OrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ business?: string }>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -10,13 +15,45 @@ export default async function OrdersPage() {
 
   if (!user) redirect("/login");
 
-  const { data: business } = await supabase
-    .from("businesses")
-    .select("id")
-    .eq("owner_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const { business: businessParam } = await searchParams;
+
+  let business: { id: string; name: string } | null = null;
+  let isAdminMode = false;
+
+  if (businessParam) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const isAdmin = profile?.role === "admin";
+
+    if (isAdmin) {
+      const { data: targetBusiness } = await supabase
+        .from("businesses")
+        .select("id, name")
+        .eq("id", businessParam)
+        .maybeSingle();
+
+      if (targetBusiness) {
+        business = targetBusiness;
+        isAdminMode = true;
+      }
+    }
+  }
+
+  if (!business) {
+    const { data: ownBusiness } = await supabase
+      .from("businesses")
+      .select("id, name")
+      .eq("owner_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    business = ownBusiness;
+  }
 
   if (!business) redirect("/dashboard/onboarding");
 
@@ -27,5 +64,15 @@ export default async function OrdersPage() {
     .order("created_at", { ascending: false })
     .limit(100);
 
-  return <OrdersClient initialOrders={orders || []} />;
+  return (
+    <>
+      {isAdminMode && (
+        <AdminModeBanner
+          businessName={business.name}
+          businessId={business.id}
+        />
+      )}
+      <OrdersClient initialOrders={orders || []} />
+    </>
+  );
 }
