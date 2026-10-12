@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Trash2, Check, User, Phone, FileText } from "lucide-react";
+import { ArrowRight, Trash2, Check, Plus } from "lucide-react";
 import QRCode from "qrcode";
+import { AddItemsModal } from "@/components/business/AddItemsModal";
 import { createClient } from "@/lib/supabase/client";
 
 interface CartItem {
@@ -12,6 +13,17 @@ interface CartItem {
   price: number;
   quantity: number;
   imageUrl?: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  discount_price?: number | null;
+  image_url?: string | null;
+  category_id?: string | null;
+  is_available?: boolean;
 }
 
 export default function OrderPage({
@@ -25,12 +37,9 @@ export default function OrderPage({
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orderCode, setOrderCode] = useState<string>("");
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
-  const [saving, setSaving] = useState(false);
-
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [customerNote, setCustomerNote] = useState("");
-  const [tableNumber, setTableNumber] = useState("");
+  const [showAddItems, setShowAddItems] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [businessId, setBusinessId] = useState<string>("");
 
   useEffect(() => {
     params.then((p) => setSlug(p.slug));
@@ -46,6 +55,76 @@ export default function OrderPage({
     if (!slug) return;
     localStorage.setItem(`linqma-cart-${slug}`, JSON.stringify(cart));
   }, [cart, slug]);
+
+  // بارگذاری محصولات برای مودال
+  useEffect(() => {
+    if (!slug) return;
+    (async () => {
+      const { data: business } = await supabase
+        .from("businesses")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
+
+      if (!business) return;
+      setBusinessId(business.id);
+
+      const { data: productsData } = await supabase
+        .from("products")
+        .select("*")
+        .eq("business_id", business.id)
+        .eq("is_active", true)
+        .order("sort_order");
+
+      if (productsData) setProducts(productsData);
+    })();
+  }, [slug, supabase]);
+
+  const addToCart = (productId: string) => {
+    const product = products.find((p) => p.id === productId);
+    if (!product) return;
+
+    const finalPrice =
+      product.discount_price && product.discount_price < product.price
+        ? product.discount_price
+        : product.price;
+
+    setCart((prev) => {
+      const existing = prev.find((item) => item.id === productId);
+      if (existing) {
+        return prev.map((item) =>
+          item.id === productId
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [
+        ...prev,
+        {
+          id: product.id,
+          name: product.name,
+          price: finalPrice,
+          quantity: 1,
+          imageUrl: product.image_url || undefined,
+        },
+      ];
+    });
+  };
+
+  const removeFromCart = (productId: string) => {
+    setCart((prev) => {
+      const existing = prev.find((item) => item.id === productId);
+      if (!existing) return prev;
+      if (existing.quantity <= 1) {
+        return prev.filter((item) => item.id !== productId);
+      }
+      return prev.map((item) =>
+        item.id === productId
+          ? { ...item, quantity: item.quantity - 1 }
+          : item
+      );
+    });
+  };
 
   const increase = (id: string) => {
     setCart((prev) =>
@@ -81,34 +160,22 @@ export default function OrderPage({
 
   const submitOrder = async () => {
     if (cart.length === 0) return;
-    setSaving(true);
+    if (!businessId) return;
 
     const code = Math.random().toString(36).substring(2, 5).toUpperCase();
 
-    const { data: business } = await supabase
-      .from("businesses")
-      .select("id")
-      .eq("slug", slug)
-      .maybeSingle();
+    // ذخیره در دیتابیس
+    const { error } = await supabase.from("orders").insert({
+      business_id: businessId,
+      short_code: code,
+      items: cart,
+      total: totalPrice,
+      status: "pending",
+    });
 
-    if (business) {
-      await supabase.from("orders").insert({
-        business_id: business.id,
-        short_code: code,
-        items: cart.map((item) => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          imageUrl: item.imageUrl || null,
-        })),
-        total: totalPrice,
-        status: "pending",
-        customer_name: customerName.trim() || null,
-        customer_phone: customerPhone.trim() || null,
-        customer_note: customerNote.trim() || null,
-        table_number: tableNumber.trim() || null,
-      });
+    if (error) {
+      alert("خطا در ثبت سفارش. لطفاً دوباره تلاش کنید.");
+      return;
     }
 
     setOrderCode(code);
@@ -120,7 +187,6 @@ export default function OrderPage({
       color: { dark: "#0F172A", light: "#FFFFFF" },
     });
     setQrDataUrl(dataUrl);
-    setSaving(false);
   };
 
   if (orderCode) {
@@ -220,7 +286,7 @@ export default function OrderPage({
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] font-[Vazirmatn] pb-44" dir="rtl">
+    <div className="min-h-screen bg-[#FAF7F2] font-[Vazirmatn] pb-32" dir="rtl">
       <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-[#EDE8DF]">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <button
@@ -241,7 +307,7 @@ export default function OrderPage({
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
+      <div className="max-w-2xl mx-auto px-4 py-4 space-y-3">
         <div className="bg-white rounded-2xl border border-[#EDE8DF] overflow-hidden">
           {cart.map((item) => (
             <div
@@ -297,71 +363,15 @@ export default function OrderPage({
           ))}
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#EDE8DF] p-4 space-y-4">
-          <h2 className="font-bold text-sm text-[#0F172A]">
-            اطلاعات شما
-          </h2>
-
-          <div>
-            <label className="text-xs font-medium text-[#64748B] flex items-center gap-1.5 mb-1.5">
-              <User className="w-3.5 h-3.5" />
-              نام و نام خانوادگی
-            </label>
-            <input
-              type="text"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="مثلاً علی احمدی"
-              className="w-full h-11 px-4 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-[#D4AF37]"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-medium text-[#64748B] flex items-center gap-1.5 mb-1.5">
-              <Phone className="w-3.5 h-3.5" />
-              شماره تماس
-            </label>
-            <input
-              type="tel"
-              value={customerPhone}
-              onChange={(e) =>
-                setCustomerPhone(e.target.value.replace(/\D/g, ""))
-              }
-              placeholder="۰۹۱۲۳۴۵۶۷۸۹"
-              maxLength={11}
-              dir="ltr"
-              className="w-full h-11 px-4 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-[#D4AF37] text-left"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-medium text-[#64748B] flex items-center gap-1.5 mb-1.5">
-              <FileText className="w-3.5 h-3.5" />
-              یادداشت
-            </label>
-            <input
-              type="text"
-              value={customerNote}
-              onChange={(e) => setCustomerNote(e.target.value)}
-              placeholder="مثلاً بدون شکر"
-              className="w-full h-11 px-4 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-[#D4AF37]"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-medium text-[#64748B] mb-1.5 block">
-              شماره میز
-            </label>
-            <input
-              type="text"
-              value={tableNumber}
-              onChange={(e) => setTableNumber(e.target.value)}
-              placeholder="مثلاً ۵"
-              maxLength={3}
-              className="w-full h-11 px-4 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-[#D4AF37]"
-            />
-          </div>
-        </div>
+        {/* دکمه افزودن آیتم جدید */}
+        <button
+          type="button"
+          onClick={() => setShowAddItems(true)}
+          className="w-full h-12 rounded-2xl bg-white border-2 border-dashed border-[#D4AF37] text-[#0F172A] font-bold text-sm cursor-pointer hover:bg-[#D4AF37]/5 transition flex items-center justify-center gap-2"
+        >
+          <Plus className="w-4 h-4 text-[#D4AF37]" />
+          افزودن آیتم جدید
+        </button>
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#EDE8DF] p-4 z-30">
@@ -381,13 +391,22 @@ export default function OrderPage({
           <button
             type="button"
             onClick={submitOrder}
-            disabled={saving}
-            className="w-full h-12 rounded-2xl bg-[#0F172A] text-white font-bold cursor-pointer hover:bg-[#1E293B] transition disabled:opacity-60"
+            className="w-full h-12 rounded-2xl bg-[#0F172A] text-white font-bold cursor-pointer hover:bg-[#1E293B] transition"
           >
-            {saving ? "در حال ثبت..." : "ثبت سفارش"}
+            ثبت سفارش
           </button>
         </div>
       </div>
+
+      {showAddItems && (
+        <AddItemsModal
+          products={products}
+          cart={cart}
+          onAdd={addToCart}
+          onRemove={removeFromCart}
+          onClose={() => setShowAddItems(false)}
+        />
+      )}
     </div>
   );
 }
