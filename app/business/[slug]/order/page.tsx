@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Trash2, Check, Plus } from "lucide-react";
+import { ArrowRight, Trash2, Check, Plus, User, Phone, FileText } from "lucide-react";
 import QRCode from "qrcode";
 import { AddItemsModal } from "@/components/business/AddItemsModal";
 import { createClient } from "@/lib/supabase/client";
@@ -41,6 +41,11 @@ export default function OrderPage({
   const [products, setProducts] = useState<Product[]>([]);
   const [businessId, setBusinessId] = useState<string>("");
 
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerNote, setCustomerNote] = useState("");
+  const [tableNumber, setTableNumber] = useState("");
+
   useEffect(() => {
     params.then((p) => setSlug(p.slug));
   }, [params]);
@@ -56,7 +61,6 @@ export default function OrderPage({
     localStorage.setItem(`linqma-cart-${slug}`, JSON.stringify(cart));
   }, [cart, slug]);
 
-  // بارگذاری محصولات برای مودال
   useEffect(() => {
     if (!slug) return;
     (async () => {
@@ -164,13 +168,16 @@ export default function OrderPage({
 
     const code = Math.random().toString(36).substring(2, 5).toUpperCase();
 
-    // ذخیره در دیتابیس
     const { error } = await supabase.from("orders").insert({
       business_id: businessId,
       short_code: code,
       items: cart,
       total: totalPrice,
       status: "pending",
+      customer_name: customerName.trim() || null,
+      customer_phone: customerPhone.trim() || null,
+      customer_note: customerNote.trim() || null,
+      table_number: tableNumber.trim() || null,
     });
 
     if (error) {
@@ -308,6 +315,7 @@ export default function OrderPage({
       </header>
 
       <div className="max-w-2xl mx-auto px-4 py-4 space-y-3">
+        {/* لیست اقلام */}
         <div className="bg-white rounded-2xl border border-[#EDE8DF] overflow-hidden">
           {cart.map((item) => (
             <div
@@ -372,6 +380,75 @@ export default function OrderPage({
           <Plus className="w-4 h-4 text-[#D4AF37]" />
           افزودن آیتم جدید
         </button>
+
+        {/* اطلاعات مشتری */}
+        <div className="bg-white rounded-2xl border border-[#EDE8DF] p-4">
+          <h3 className="font-bold text-sm text-[#0F172A] mb-3">
+            اطلاعات سفارش‌دهنده
+          </h3>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-[#64748B] flex items-center gap-1.5 mb-1.5">
+                <User className="w-3.5 h-3.5" />
+                نام
+              </label>
+              <input
+                type="text"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="نام شما"
+                className="w-full h-10 px-3 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-[#D4AF37]"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-[#64748B] flex items-center gap-1.5 mb-1.5">
+                <Phone className="w-3.5 h-3.5" />
+                تلفن
+              </label>
+              <input
+                type="tel"
+                value={customerPhone}
+                onChange={(e) =>
+                  setCustomerPhone(e.target.value.replace(/\D/g, ""))
+                }
+                placeholder="۰۹۱۲۳۴۵۶۷۸۹"
+                maxLength={11}
+                dir="ltr"
+                className="w-full h-10 px-3 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-[#D4AF37] text-left"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-[#64748B] flex items-center gap-1.5 mb-1.5">
+                <FileText className="w-3.5 h-3.5" />
+                یادداشت
+              </label>
+              <input
+                type="text"
+                value={customerNote}
+                onChange={(e) => setCustomerNote(e.target.value)}
+                placeholder="مثلاً بدون شکر"
+                className="w-full h-10 px-3 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-[#D4AF37]"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-[#64748B] mb-1.5 block">
+                شماره میز (اختیاری)
+              </label>
+              <input
+                type="text"
+                value={tableNumber}
+                onChange={(e) => setTableNumber(e.target.value)}
+                placeholder="مثلاً ۵"
+                maxLength={3}
+                className="w-full h-10 px-3 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-[#D4AF37]"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#EDE8DF] p-4 z-30">
