@@ -12,8 +12,7 @@ import {
   Trash2,
   ExternalLink,
   Store,
-  Package,
-  ShoppingBag,
+  Settings,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -277,6 +276,13 @@ export function AdminBusinessesClient({
               </div>
 
               <div className="flex flex-wrap gap-2 shrink-0">
+                <Link
+                  href={`/admin/business/${b.id}`}
+                  className="h-9 px-3 rounded-xl bg-[#0B1B33] text-white text-xs font-bold flex items-center gap-1 hover:bg-[#1E293B] transition"
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                  ورود به پنل
+                </Link>
                 <Link
                   href={`/business/${b.slug}`}
                   target="_blank"
