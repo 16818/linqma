@@ -1,75 +1,107 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Hero } from "@/components/landing/Hero";
+import { Features } from "@/components/landing/Features";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+import { Pricing } from "@/components/landing/Pricing";
+import { FAQ } from "@/components/landing/FAQ";
+import { CTA } from "@/components/landing/CTA";
+import { Footer } from "@/components/landing/Footer";
+import { ScrollToTop } from "@/components/landing/ScrollToTop";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[#F7F6F3] font-[Vazirmatn] text-[#0F172A]" dir="rtl">
-      <header className="border-b border-[#EDE8DF] bg-white/80 backdrop-blur">
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          <span className="text-xl font-bold text-[#D4AF37]">LINQMA</span>
-          <div className="flex gap-3">
+    <div
+      className="min-h-screen bg-[#F7F6F3] font-[Vazirmatn] text-[#0F172A]"
+      dir="rtl"
+    >
+      {/* هدر */}
+      <header className="sticky top-0 z-50 border-b border-[#EDE8DF] bg-white/90 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+          {/* لوگو */}
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-9 h-9 rounded-xl bg-[#D4AF37] flex items-center justify-center">
+              <span className="text-white font-black text-lg leading-none">
+                L
+              </span>
+            </div>
+            <div>
+              <p className="font-black text-[#0F172A] text-base leading-none">
+                LINQMA
+              </p>
+              <p className="text-[9px] text-[#64748B] mt-0.5 hidden sm:block">
+                ویترین دیجیتال کسب‌وکار
+              </p>
+            </div>
+          </Link>
+
+          {/* منو */}
+          <nav className="hidden md:flex items-center gap-6 text-sm">
+            <a
+              href="#features"
+              className="text-[#64748B] hover:text-[#0F172A] transition font-medium"
+            >
+              امکانات
+            </a>
+            <a
+              href="#how"
+              className="text-[#64748B] hover:text-[#0F172A] transition font-medium"
+            >
+              چطور کار می‌کند
+            </a>
+            <a
+              href="#pricing"
+              className="text-[#64748B] hover:text-[#0F172A] transition font-medium"
+            >
+              قیمت‌ها
+            </a>
+            <a
+              href="#faq"
+              className="text-[#64748B] hover:text-[#0F172A] transition font-medium"
+            >
+              سؤالات متداول
+            </a>
+          </nav>
+
+          {/* دکمه‌ها */}
+          <div className="flex gap-2">
             <Link href="/login">
-              <Button variant="ghost">ورود</Button>
+              <Button variant="ghost" className="text-sm">
+                ورود
+              </Button>
             </Link>
             <Link href="/signup">
-              <Button variant="gold">شروع رایگان</Button>
+              <Button variant="gold" className="text-sm">
+                شروع رایگان
+              </Button>
             </Link>
           </div>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-16 md:py-24 text-center">
-        <h1 className="text-3xl md:text-5xl font-black leading-tight">
-          ویترین دیجیتال کسب‌وکار شما
-        </h1>
-        <p className="mt-5 text-lg text-[#0F172A]/70 max-w-2xl mx-auto leading-relaxed">
-          منوی آنلاین، کاتالوگ محصولات و QR اختصاصی برای کافه، رستوران و فروشگاه —
-          ساده، شیک و آماده فروش.
-        </p>
-        <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
-          <Link href="/signup">
-            <Button variant="gold" size="lg" className="w-full sm:w-auto">
-              ساخت ویترین
-            </Button>
-          </Link>
-          <Link href="/login">
-            <Button variant="outline" size="lg" className="w-full sm:w-auto">
-              ورود به پنل
-            </Button>
-          </Link>
+      {/* بخش‌ها */}
+      <main>
+        <Hero />
+        <div id="features">
+          <Features />
         </div>
-
-        <div className="mt-20 grid sm:grid-cols-3 gap-4 text-right">
-          {[
-            {
-              title: "QR اختصاصی",
-              desc: "مشتری با اسکن، منو یا کاتالوگ را می‌بیند.",
-            },
-            {
-              title: "مدیریت آسان",
-              desc: "محصول، دسته و تنظیمات را از پنل مدیریت کنید.",
-            },
-            {
-              title: "سفارش در باجه",
-              desc: "سبد سفارش و QR برای نمایش به صندوق، بدون پرداخت آنلاین.",
-            },
-          ].map((item) => (
-            <div
-              key={item.title}
-              className="bg-white rounded-3xl border border-[#EDE8DF] p-6 shadow-sm"
-            >
-              <h3 className="font-bold text-lg text-[#0F172A]">{item.title}</h3>
-              <p className="mt-2 text-sm text-[#0F172A]/60 leading-relaxed">
-                {item.desc}
-              </p>
-            </div>
-          ))}
+        <div id="how">
+          <HowItWorks />
         </div>
+        <div id="pricing">
+          <Pricing />
+        </div>
+        <div id="faq">
+          <FAQ />
+        </div>
+        <CTA />
       </main>
 
-      <footer className="border-t border-[#EDE8DF] py-8 text-center text-sm text-[#0F172A]/50">
-        © {new Date().getFullYear()} LINQMA
-      </footer>
+      {/* فوتر */}
+      <Footer />
+
+      {/* دکمه بازگشت به بالا */}
+      <ScrollToTop />
     </div>
   );
 }
