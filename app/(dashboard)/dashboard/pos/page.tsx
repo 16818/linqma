@@ -17,6 +17,7 @@ import {
   Save,
 } from "lucide-react";
 import { AdminModeBanner } from "@/components/dashboard/AdminModeBanner";
+import { AddItemsModal } from "@/components/business/AddItemsModal";
 
 interface OrderItem {
   id: string;
@@ -24,6 +25,17 @@ interface OrderItem {
   price: number;
   quantity: number;
   imageUrl?: string | null;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  discount_price?: number | null;
+  image_url?: string | null;
+  category_id?: string | null;
+  is_available?: boolean;
 }
 
 interface Order {
@@ -55,6 +67,9 @@ export default function POSPage({
   const [businessName, setBusinessName] = useState<string>("");
   const [ready, setReady] = useState(false);
 
+  const [products, setProducts] = useState<Product[]>([]);
+  const [showAddItems, setShowAddItems] = useState(false);
+
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editNote, setEditNote] = useState("");
@@ -68,6 +83,8 @@ export default function POSPage({
     (async () => {
       const sp = await searchParams;
       const businessParam = sp.business;
+
+      let finalBusinessId: string | null = null;
 
       if (businessParam) {
         const {
@@ -92,30 +109,43 @@ export default function POSPage({
               setBusinessId(targetBusiness.id);
               setBusinessName(targetBusiness.name);
               setIsAdminMode(true);
-              setReady(true);
-              return;
+              finalBusinessId = targetBusiness.id;
             }
           }
         }
       }
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      if (!finalBusinessId) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-      if (user) {
-        const { data: ownBusiness } = await supabase
-          .from("businesses")
-          .select("id, name")
-          .eq("owner_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        if (user) {
+          const { data: ownBusiness } = await supabase
+            .from("businesses")
+            .select("id, name")
+            .eq("owner_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-        if (ownBusiness) {
-          setBusinessId(ownBusiness.id);
-          setBusinessName(ownBusiness.name);
+          if (ownBusiness) {
+            setBusinessId(ownBusiness.id);
+            setBusinessName(ownBusiness.name);
+            finalBusinessId = ownBusiness.id;
+          }
         }
+      }
+
+      if (finalBusinessId) {
+        const { data: productsData } = await supabase
+          .from("products")
+          .select("*")
+          .eq("business_id", finalBusinessId)
+          .eq("is_active", true)
+          .order("sort_order");
+
+        if (productsData) setProducts(productsData);
       }
 
       setReady(true);
@@ -209,6 +239,52 @@ export default function POSPage({
     setEditItems((prev) => prev.filter((_, i) => i !== idx));
   };
 
+  const addProductToOrder = (productId: string) => {
+    const product = products.find((p) => p.id === productId);
+    if (!product) return;
+
+    const finalPrice =
+      product.discount_price && product.discount_price < product.price
+        ? product.discount_price
+        : product.price;
+
+    setEditItems((prev) => {
+      const existing = prev.find((item) => item.id === productId);
+      if (existing) {
+        return prev.map((item) =>
+          item.id === productId
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [
+        ...prev,
+        {
+          id: product.id,
+          name: product.name,
+          price: finalPrice,
+          quantity: 1,
+          imageUrl: product.image_url || undefined,
+        },
+      ];
+    });
+  };
+
+  const removeProductFromOrder = (productId: string) => {
+    setEditItems((prev) => {
+      const existing = prev.find((item) => item.id === productId);
+      if (!existing) return prev;
+      if (existing.quantity <= 1) {
+        return prev.filter((item) => item.id !== productId);
+      }
+      return prev.map((item) =>
+        item.id === productId
+          ? { ...item, quantity: item.quantity - 1 }
+          : item
+      );
+    });
+  };
+
   const saveItems = async () => {
     if (!order) return;
 
@@ -294,6 +370,7 @@ export default function POSPage({
     setEditNote("");
     setEditTable("");
     setEditItems([]);
+    setShowAddItems(false);
   };
 
   const editTotal = editItems.reduce(
@@ -504,6 +581,16 @@ export default function POSPage({
                 ))
               )}
 
+              {/* دکمه افزودن آیتم جدید */}
+              <button
+                type="button"
+                onClick={() => setShowAddItems(true)}
+                className="w-full h-11 rounded-2xl bg-white border-2 border-dashed border-[#D4AF37] text-navy font-bold text-sm cursor-pointer hover:bg-[#D4AF37]/5 transition flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4 text-[#D4AF37]" />
+                افزودن آیتم جدید
+              </button>
+
               <div className="pt-3 flex items-center justify-between border-t-2 border-[#EDE8DF] mt-3">
                 <span className="text-sm font-bold text-navy/70">جمع کل</span>
                 <span className="font-black text-2xl text-gold">
@@ -621,6 +708,16 @@ export default function POSPage({
             </button>
           </div>
         </div>
+      )}
+
+      {showAddItems && (
+        <AddItemsModal
+          products={products}
+          cart={editItems}
+          onAdd={addProductToOrder}
+          onRemove={removeProductFromOrder}
+          onClose={() => setShowAddItems(false)}
+        />
       )}
     </div>
   );
