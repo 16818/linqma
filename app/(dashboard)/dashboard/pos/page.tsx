@@ -153,7 +153,10 @@ export default function POSPage({
   }, [searchParams, supabase]);
 
   const searchOrder = async () => {
-    const cleanCode = code.trim().toUpperCase();
+    const cleanCode = code
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "");
     if (!cleanCode) {
       toast.error("کد سفارش را وارد کنید");
       return;
@@ -416,8 +419,8 @@ export default function POSPage({
             onKeyDown={(e) => {
               if (e.key === "Enter") searchOrder();
             }}
-            maxLength={5}
-            placeholder="مثلاً 2DV"
+            maxLength={8}
+            placeholder="مثلاً A2C4D6"
             className="flex-1 h-14 px-4 rounded-2xl border-2 border-[#EDE8DF] focus:outline-none focus:border-gold text-center text-2xl font-black tracking-widest"
             autoFocus
           />
@@ -449,7 +452,6 @@ export default function POSPage({
 
       {order && (
         <div className="space-y-4">
-          {/* کارت اصلی سفارش */}
           <div className="bg-white rounded-3xl border border-[#EDE8DF] overflow-hidden shadow-sm">
             <div className="p-5 bg-[#0F172A] text-white flex items-center justify-between flex-wrap gap-3">
               <div>
@@ -494,7 +496,6 @@ export default function POSPage({
               </div>
             </div>
 
-            {/* اقلام قابل ویرایش */}
             <div className="p-5 space-y-3">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-sm font-bold text-navy/70">
@@ -581,7 +582,6 @@ export default function POSPage({
                 ))
               )}
 
-              {/* دکمه افزودن آیتم جدید */}
               <button
                 type="button"
                 onClick={() => setShowAddItems(true)}
@@ -601,7 +601,6 @@ export default function POSPage({
             </div>
           </div>
 
-          {/* اطلاعات مشتری */}
           <div className="bg-white rounded-3xl border border-[#EDE8DF] p-5 shadow-sm">
             <h3 className="font-bold text-sm text-navy mb-4">
               اطلاعات مشتری
@@ -678,7 +677,6 @@ export default function POSPage({
             </button>
           </div>
 
-          {/* دکمه‌های اصلی */}
           <div className="bg-white rounded-3xl border border-[#EDE8DF] p-5 shadow-sm space-y-2">
             <div className="flex gap-2">
               <button

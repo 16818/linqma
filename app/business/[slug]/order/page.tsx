@@ -68,6 +68,7 @@ export default function OrderPage({
         .from("businesses")
         .select("id")
         .eq("slug", slug)
+        .eq("is_published", true)
         .maybeSingle();
 
       if (!business) return;
@@ -162,25 +163,51 @@ export default function OrderPage({
     0
   );
 
+  const generateCode = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let code = "";
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  };
+
   const submitOrder = async () => {
     if (cart.length === 0) return;
     if (!businessId) return;
 
-    const code = Math.random().toString(36).substring(2, 5).toUpperCase();
+    let code = "";
+    let inserted = false;
+    let lastError: unknown = null;
 
-    const { error } = await supabase.from("orders").insert({
-      business_id: businessId,
-      short_code: code,
-      items: cart,
-      total: totalPrice,
-      status: "pending",
-      customer_name: customerName.trim() || null,
-      customer_phone: customerPhone.trim() || null,
-      customer_note: customerNote.trim() || null,
-      table_number: tableNumber.trim() || null,
-    });
+    for (let attempt = 0; attempt < 5; attempt++) {
+      code = generateCode();
 
-    if (error) {
+      const { error } = await supabase.from("orders").insert({
+        business_id: businessId,
+        short_code: code,
+        items: cart,
+        total: totalPrice,
+        status: "pending",
+        customer_name: customerName.trim() || null,
+        customer_phone: customerPhone.trim() || null,
+        customer_note: customerNote.trim() || null,
+        table_number: tableNumber.trim() || null,
+      });
+
+      if (!error) {
+        inserted = true;
+        break;
+      }
+
+      if (error.code !== "23505") {
+        lastError = error;
+        break;
+      }
+    }
+
+    if (!inserted) {
+      console.error("Order insert failed:", lastError);
       alert("خطا در ثبت سفارش. لطفاً دوباره تلاش کنید.");
       return;
     }
@@ -230,7 +257,7 @@ export default function OrderPage({
 
             <div className="mt-4 flex items-center gap-2">
               <span className="text-xs text-[#64748B]">کد سفارش:</span>
-              <span className="font-black text-3xl tracking-[0.3em] text-[#0F172A]">
+              <span className="font-black text-2xl tracking-[0.2em] text-[#0F172A]">
                 {orderCode}
               </span>
             </div>
@@ -250,17 +277,30 @@ export default function OrderPage({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setCart([]);
-              localStorage.removeItem(`linqma-cart-${slug}`);
-              router.push(`/business/${slug}`);
-            }}
-            className="mt-6 w-full h-12 rounded-2xl bg-[#0F172A] text-white font-bold cursor-pointer hover:bg-[#1E293B] transition"
-          >
-            بازگشت به منو
-          </button>
+          <div className="mt-6 space-y-2">
+            <button
+              type="button"
+              onClick={() => {
+                setOrderCode("");
+                setQrDataUrl("");
+              }}
+              className="w-full h-12 rounded-2xl bg-[#D4AF37] text-white font-bold cursor-pointer hover:bg-[#C4A034] transition"
+            >
+              ویرایش سفارش
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setCart([]);
+                localStorage.removeItem(`linqma-cart-${slug}`);
+                router.push(`/business/${slug}`);
+              }}
+              className="w-full h-12 rounded-2xl bg-white border border-[#EDE8DF] text-[#0F172A] font-bold cursor-pointer hover:bg-[#EFE9DF] transition"
+            >
+              بازگشت به منو
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -315,7 +355,6 @@ export default function OrderPage({
       </header>
 
       <div className="max-w-2xl mx-auto px-4 py-4 space-y-3">
-        {/* لیست اقلام */}
         <div className="bg-white rounded-2xl border border-[#EDE8DF] overflow-hidden">
           {cart.map((item) => (
             <div
@@ -371,7 +410,6 @@ export default function OrderPage({
           ))}
         </div>
 
-        {/* دکمه افزودن آیتم جدید */}
         <button
           type="button"
           onClick={() => setShowAddItems(true)}
@@ -381,7 +419,6 @@ export default function OrderPage({
           افزودن آیتم جدید
         </button>
 
-        {/* اطلاعات مشتری */}
         <div className="bg-white rounded-2xl border border-[#EDE8DF] p-4">
           <h3 className="font-bold text-sm text-[#0F172A] mb-3">
             اطلاعات سفارش‌دهنده
