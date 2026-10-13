@@ -82,10 +82,13 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-cream font-vazir flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">ساخت کسب‌وکار شما</CardTitle>
-          <p className="text-sm text-navy/60 mt-1">
-            نام فارسی باشد؛ آدرس فقط انگلیسی
-          </p>
+          <CardTitle className="text-2xl">
+            <span className="font-black tracking-wider" dir="ltr">
+              LINQMA
+            </span>
+          </CardTitle>
+          <p className="text-xs text-navy/50 mt-0.5">لینکیوما</p>
+          <p className="text-sm text-navy/60 mt-2">ساخت کسب‌وکار شما</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleCreate} className="space-y-4">
@@ -107,23 +110,38 @@ export default function OnboardingPage() {
                 آدرس اختصاصی * (فقط انگلیسی)
               </label>
               <div className="mt-1.5 flex items-center gap-2">
-                <span className="text-sm text-navy/50">linqma.ir/</span>
+                <span className="text-sm text-navy/50 whitespace-nowrap">
+                  linqma.ir/
+                </span>
                 <input
                   type="text"
                   value={slug}
                   onChange={(e) =>
-                    setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
+                    setSlug(
+                      e.target.value
+                        .toLowerCase()
+                        .replace(/[^a-z0-9-]/g, "")
+                    )
                   }
                   required
                   placeholder="cafe-rozhan"
-                  className="flex-1 h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50"
+                  dir="ltr"
+                  className="flex-1 h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left"
                 />
               </div>
+              <p className="mt-1 text-xs text-navy/40">
+                این آدرس در لینک ویترین شما استفاده می‌شود
+              </p>
             </div>
             {error && (
               <p className="text-sm text-red-500 text-center">{error}</p>
             )}
-            <Button type="submit" variant="gold" className="w-full" disabled={loading}>
+            <Button
+              type="submit"
+              variant="gold"
+              className="w-full"
+              disabled={loading}
+            >
               {loading ? "در حال ساخت..." : "ساخت کسب‌وکار"}
             </Button>
           </form>
