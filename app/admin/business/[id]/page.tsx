@@ -10,6 +10,7 @@ import {
   Tags,
   Settings,
 } from "lucide-react";
+import { TransferOwnershipButton } from "@/components/admin/TransferOwnershipButton";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,12 @@ export default async function AdminBusinessPage({
     .maybeSingle();
 
   if (!business) notFound();
+
+  const { data: ownerProfile } = await supabase
+    .from("profiles")
+    .select("id, full_name, role")
+    .eq("id", business.owner_id)
+    .maybeSingle();
 
   const { data: products } = await supabase
     .from("products")
@@ -135,6 +142,33 @@ export default async function AdminBusinessPage({
             >
               مشاهده ویترین
             </Link>
+          </div>
+        </div>
+
+        {/* مالک کسب‌وکار */}
+        <div className="bg-white rounded-3xl border border-[#EDE8DF] p-5">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-[#D4AF37]/10 flex items-center justify-center">
+                <span className="text-lg">👤</span>
+              </div>
+              <div>
+                <p className="text-xs text-[#64748B]">مالک فعلی</p>
+                <p className="font-bold text-[#0F172A]">
+                  {ownerProfile?.full_name || "بدون نام"}
+                </p>
+                <p
+                  className="text-[10px] text-[#64748B] font-mono mt-0.5"
+                  dir="ltr"
+                >
+                  {business.owner_id}
+                </p>
+              </div>
+            </div>
+            <TransferOwnershipButton
+              businessId={business.id}
+              currentOwnerId={business.owner_id}
+            />
           </div>
         </div>
 

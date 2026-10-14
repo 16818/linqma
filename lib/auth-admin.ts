@@ -14,7 +14,7 @@ export async function requireAdmin() {
     .eq("id", user.id)
     .maybeSingle();
 
-  const role = profile?.role ?? "owner";
+  const role = (profile?.role ?? "business_owner").trim();
   if (role !== "admin") {
     return { ok: false as const, user, role };
   }

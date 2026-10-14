@@ -35,6 +35,7 @@ export async function proxy(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  // اگر لاگین نیست و به پنل یا ادمین می‌رود
   if (
     !user &&
     (pathname.startsWith("/dashboard") || pathname.startsWith("/admin"))
@@ -42,6 +43,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  // اگر لاگین است و به login/signup می‌رود
   if (
     user &&
     (pathname.startsWith("/login") || pathname.startsWith("/signup"))
@@ -49,17 +51,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  if (user && pathname.startsWith("/admin")) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (profile?.role !== "admin") {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
-  }
+  // توجه: چک نقش admin در proxy حذف شد.
+  // این کار در app/admin/page.tsx با requireAdmin انجام می‌شود.
+  // دلیل: createServerClient در proxy ممکن است کوکی تازه نداشته باشد.
 
   return response;
 }
