@@ -2,7 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Trash2, Check, Plus, User, Phone, FileText } from "lucide-react";
+import {
+  ArrowRight,
+  Trash2,
+  Check,
+  Plus,
+  User,
+  Phone,
+  FileText,
+} from "lucide-react";
 import QRCode from "qrcode";
 import { AddItemsModal } from "@/components/business/AddItemsModal";
 import { createClient } from "@/lib/supabase/client";
@@ -164,11 +172,22 @@ export default function OrderPage({
   );
 
   const generateCode = () => {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    // ۲ حرف + ۴ عدد (برای خواندن و تایپ راحت)
+    const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // بدون I و O
+    const digits = "0123456789";
+
     let code = "";
-    for (let i = 0; i < 6; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
+
+    // ۲ حرف
+    for (let i = 0; i < 2; i++) {
+      code += letters.charAt(Math.floor(Math.random() * letters.length));
     }
+
+    // ۴ عدد
+    for (let i = 0; i < 4; i++) {
+      code += digits.charAt(Math.floor(Math.random() * digits.length));
+    }
+
     return code;
   };
 
@@ -180,6 +199,7 @@ export default function OrderPage({
     let inserted = false;
     let lastError: unknown = null;
 
+    // تلاش تا ۵ بار برای جلوگیری از تداخل short_code
     for (let attempt = 0; attempt < 5; attempt++) {
       code = generateCode();
 
@@ -200,6 +220,7 @@ export default function OrderPage({
         break;
       }
 
+      // اگر خطا مربوط به unique بود، دوباره تلاش کن
       if (error.code !== "23505") {
         lastError = error;
         break;
