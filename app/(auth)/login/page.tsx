@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -102,14 +101,10 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="text-center text-sm text-navy/60 mt-6">
-            حساب ندارید؟{" "}
-            <Link
-              href="/signup"
-              className="text-gold font-medium hover:underline"
-            >
-              ثبت‌نام کنید
-            </Link>
+          <p className="text-center text-xs text-navy/50 mt-6 leading-relaxed">
+            ثبت‌نام عمومی غیرفعال است.
+            <br />
+            برای دریافت دسترسی با پشتیبانی تماس بگیرید.
           </p>
         </CardContent>
       </Card>

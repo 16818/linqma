@@ -38,6 +38,7 @@ export default async function DashboardPage({
 
   let isAdminMode = false;
 
+  // حالت مدیر: اگر businessParam هست و کاربر admin است
   if (businessParam) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -61,7 +62,32 @@ export default async function DashboardPage({
     }
   }
 
+  // حالت عادی: بدون businessParam
   if (!business) {
+    // اول چک کن کاربر admin است و کسب‌وکار خودش را ندارد
+    if (!businessParam) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profile?.role === "admin") {
+        const { data: adminOwnBusiness } = await supabase
+          .from("businesses")
+          .select("id")
+          .eq("owner_id", user.id)
+          .limit(1)
+          .maybeSingle();
+
+        // اگر ادمین کسب‌وکار خودش را ندارد، به /admin برود
+        if (!adminOwnBusiness) {
+          redirect("/admin");
+        }
+      }
+    }
+
+    // کسب‌وکار خود کاربر
     const { data: ownBusiness } = await supabase
       .from("businesses")
       .select("id, name, slug, is_published")

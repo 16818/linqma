@@ -35,6 +35,11 @@ export async function proxy(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  // ثبت‌نام عمومی بسته است — همیشه به login ریدایرکت شود
+  if (pathname.startsWith("/signup")) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
   // اگر لاگین نیست و به پنل یا ادمین می‌رود
   if (
     !user &&
@@ -43,17 +48,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // اگر لاگین است و به login/signup می‌رود
-  if (
-    user &&
-    (pathname.startsWith("/login") || pathname.startsWith("/signup"))
-  ) {
+  // اگر لاگین است و به login می‌رود
+  if (user && pathname.startsWith("/login")) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
-
-  // توجه: چک نقش admin در proxy حذف شد.
-  // این کار در app/admin/page.tsx با requireAdmin انجام می‌شود.
-  // دلیل: createServerClient در proxy ممکن است کوکی تازه نداشته باشد.
 
   return response;
 }
