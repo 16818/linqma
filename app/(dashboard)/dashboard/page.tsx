@@ -29,6 +29,20 @@ export default async function DashboardPage({
 
   const { business: businessParam } = await searchParams;
 
+  // گرفتن نقش کاربر
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const isAdmin = profile?.role === "admin";
+
+  // اگر admin است و businessParam ندارد → همیشه به /admin
+  if (isAdmin && !businessParam) {
+    redirect("/admin");
+  }
+
   let business: {
     id: string;
     name: string;
@@ -40,14 +54,6 @@ export default async function DashboardPage({
 
   // حالت مدیر: اگر businessParam هست و کاربر admin است
   if (businessParam) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    const isAdmin = profile?.role === "admin";
-
     if (isAdmin) {
       const { data: targetBusiness } = await supabase
         .from("businesses")
@@ -62,32 +68,8 @@ export default async function DashboardPage({
     }
   }
 
-  // حالت عادی: بدون businessParam
+  // حالت عادی: کسب‌وکار خود کاربر
   if (!business) {
-    // اول چک کن کاربر admin است و کسب‌وکار خودش را ندارد
-    if (!businessParam) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (profile?.role === "admin") {
-        const { data: adminOwnBusiness } = await supabase
-          .from("businesses")
-          .select("id")
-          .eq("owner_id", user.id)
-          .limit(1)
-          .maybeSingle();
-
-        // اگر ادمین کسب‌وکار خودش را ندارد، به /admin برود
-        if (!adminOwnBusiness) {
-          redirect("/admin");
-        }
-      }
-    }
-
-    // کسب‌وکار خود کاربر
     const { data: ownBusiness } = await supabase
       .from("businesses")
       .select("id, name, slug, is_published")
