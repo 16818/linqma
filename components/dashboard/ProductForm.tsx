@@ -46,7 +46,9 @@ export function ProductForm({
   const [discountPrice, setDiscountPrice] = useState(
     initialData?.discount_price?.toString() || ""
   );
-  const [imageUrl, setImageUrl] = useState<string | null>(initialData?.image_url || null);
+  const [imageUrl, setImageUrl] = useState<string | null>(
+    initialData?.image_url || null
+  );
   const [categoryId, setCategoryId] = useState(initialData?.category_id || "");
   const [badge, setBadge] = useState(initialData?.badge || "");
   const [ingredients, setIngredients] = useState(
@@ -70,6 +72,12 @@ export function ProductForm({
 
     const p = parseInt(price);
     const d = parseInt(discountPrice);
+
+    if (isNaN(p) || p <= 0) {
+      setError("قیمت اصلی باید بزرگ‌تر از صفر باشد");
+      setLoading(false);
+      return;
+    }
 
     if (discountPrice && (isNaN(d) || d <= 0)) {
       setError("قیمت تخفیف باید بزرگ‌تر از صفر باشد");
@@ -121,6 +129,10 @@ export function ProductForm({
     onClose();
   };
 
+  const filterNumeric = (value: string) => {
+    return value.replace(/\D/g, "");
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4">
       <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
@@ -164,12 +176,14 @@ export function ProductForm({
               قیمت اصلی (تومان) *
             </label>
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              onChange={(e) => setPrice(filterNumeric(e.target.value))}
               required
-              min={0}
-              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50"
+              dir="ltr"
+              placeholder="مثلاً 130000"
+              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left"
             />
           </div>
 
@@ -178,16 +192,19 @@ export function ProductForm({
               قیمت با تخفیف (اختیاری)
             </label>
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
               value={discountPrice}
-              onChange={(e) => setDiscountPrice(e.target.value)}
-              min={0}
+              onChange={(e) =>
+                setDiscountPrice(filterNumeric(e.target.value))
+              }
+              dir="ltr"
               placeholder="اگر تخفیف ندارد خالی بگذارید"
-              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50"
+              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left"
             />
 
             {discountPercent && (
-              <div className="mt-2 flex items-center gap-2 bg-[#FEF3C7] border border-[#FCD34D] rounded-xl px-3 py-2">
+              <div className="mt-2 flex items-center gap-2 bg-[#FEF3C7] border border-[#FCD34D] rounded-xl px-3 py-2 flex-wrap">
                 <span className="text-[#92400E] text-xs font-bold">
                   ٪{discountPercent} تخفیف
                 </span>
@@ -195,7 +212,8 @@ export function ProductForm({
                   قیمت اصلی: {parseInt(price).toLocaleString("fa-IR")} تومان
                 </span>
                 <span className="text-[#92400E] text-xs font-bold">
-                  قیمت نهایی: {parseInt(discountPrice).toLocaleString("fa-IR")} تومان
+                  قیمت نهایی: {parseInt(discountPrice).toLocaleString("fa-IR")}{" "}
+                  تومان
                 </span>
               </div>
             )}
