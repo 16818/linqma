@@ -21,6 +21,12 @@ interface Business {
   logo_url?: string | null;
   cover_url?: string | null;
   is_published: boolean;
+  instagram?: string | null;
+  telegram?: string | null;
+  whatsapp?: string | null;
+  rubika?: string | null;
+  eitaa?: string | null;
+  bale?: string | null;
 }
 
 export function SettingsClient({ business }: { business: Business }) {
@@ -33,6 +39,14 @@ export function SettingsClient({ business }: { business: Business }) {
   const [logoUrl, setLogoUrl] = useState<string | null>(business.logo_url ?? null);
   const [coverUrl, setCoverUrl] = useState<string | null>(business.cover_url ?? null);
   const [isPublished, setIsPublished] = useState(business.is_published);
+
+  const [instagram, setInstagram] = useState(business.instagram || "");
+  const [telegram, setTelegram] = useState(business.telegram || "");
+  const [whatsapp, setWhatsapp] = useState(business.whatsapp || "");
+  const [rubika, setRubika] = useState(business.rubika || "");
+  const [eitaa, setEitaa] = useState(business.eitaa || "");
+  const [bale, setBale] = useState(business.bale || "");
+
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -64,6 +78,12 @@ export function SettingsClient({ business }: { business: Business }) {
         logo_url: logoUrl,
         cover_url: coverUrl,
         is_published: isPublished,
+        instagram: instagram.trim() || null,
+        telegram: telegram.trim() || null,
+        whatsapp: whatsapp.trim() || null,
+        rubika: rubika.trim() || null,
+        eitaa: eitaa.trim() || null,
+        bale: bale.trim() || null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", business.id);
@@ -125,7 +145,9 @@ export function SettingsClient({ business }: { business: Business }) {
                 type="text"
                 value={slug}
                 onChange={(e) =>
-                  setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
+                  setSlug(
+                    e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "")
+                  )
                 }
                 className="flex-1 h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50"
               />
@@ -175,7 +197,8 @@ export function SettingsClient({ business }: { business: Business }) {
               value={workingHours}
               onChange={(e) => setWorkingHours(e.target.value)}
               placeholder="08:00-23:00"
-              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50"
+              dir="ltr"
+              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left"
             />
             <p className="mt-1 text-xs text-navy/40">
               فرمت: 08:00-23:00 (ساعت شروع و پایان)
@@ -201,6 +224,102 @@ export function SettingsClient({ business }: { business: Business }) {
                 }`}
               />
             </button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>شبکه‌های اجتماعی</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-navy/50 leading-relaxed">
+            می‌توانید نام کاربری (مثل <span dir="ltr">@username</span>) یا لینک
+            کامل را وارد کنید. فقط موارد پر شده در ویترین نمایش داده می‌شوند.
+          </p>
+
+          <div>
+            <label className="text-sm font-medium text-navy/70">
+              اینستاگرام
+            </label>
+            <input
+              type="text"
+              value={instagram}
+              onChange={(e) => setInstagram(e.target.value)}
+              placeholder="@username یا لینک کامل"
+              dir="ltr"
+              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-navy/70">
+              تلگرام
+            </label>
+            <input
+              type="text"
+              value={telegram}
+              onChange={(e) => setTelegram(e.target.value)}
+              placeholder="@username یا لینک کامل"
+              dir="ltr"
+              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-navy/70">
+              واتساپ
+            </label>
+            <input
+              type="text"
+              value={whatsapp}
+              onChange={(e) => setWhatsapp(e.target.value)}
+              placeholder="09123456789"
+              dir="ltr"
+              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-navy/70">
+              روبیکا
+            </label>
+            <input
+              type="text"
+              value={rubika}
+              onChange={(e) => setRubika(e.target.value)}
+              placeholder="نام کاربری یا لینک کامل"
+              dir="ltr"
+              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-navy/70">
+              ایتا
+            </label>
+            <input
+              type="text"
+              value={eitaa}
+              onChange={(e) => setEitaa(e.target.value)}
+              placeholder="نام کاربری یا لینک کامل"
+              dir="ltr"
+              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-navy/70">
+              بله
+            </label>
+            <input
+              type="text"
+              value={bale}
+              onChange={(e) => setBale(e.target.value)}
+              placeholder="نام کاربری یا لینک کامل"
+              dir="ltr"
+              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left"
+            />
           </div>
         </CardContent>
       </Card>

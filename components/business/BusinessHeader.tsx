@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MapPin, Clock, Phone, Instagram, Share2 } from "lucide-react";
+import { MapPin, Clock, Phone, Share2, Navigation, Share } from "lucide-react";
+import { SocialLinks } from "@/components/business/SocialLinks";
 
 interface BusinessHeaderProps {
   name: string;
@@ -14,9 +15,12 @@ interface BusinessHeaderProps {
   instagram?: string;
   telegram?: string;
   whatsapp?: string;
+  rubika?: string;
+  eitaa?: string;
+  bale?: string;
 }
 
-type DetailKey = "address" | "hours" | "phone" | null;
+type DetailKey = "address" | "hours" | "phone" | "social" | null;
 
 function getOpenStatus(workingHours?: string): {
   isOpen: boolean;
@@ -24,7 +28,9 @@ function getOpenStatus(workingHours?: string): {
 } | null {
   if (!workingHours) return null;
 
-  const match = workingHours.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+  const match = workingHours.match(
+    /(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/
+  );
   if (!match) return null;
 
   const startH = parseInt(match[1], 10);
@@ -52,6 +58,18 @@ function getOpenStatus(workingHours?: string): {
   };
 }
 
+function googleMapsUrl(address: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    address.trim()
+  )}`;
+}
+
+function neshanMapsUrl(address: string) {
+  return `https://neshan.org/maps/search/${encodeURIComponent(
+    address.trim()
+  )}`;
+}
+
 export function BusinessHeader({
   name,
   description,
@@ -63,6 +81,9 @@ export function BusinessHeader({
   instagram,
   telegram,
   whatsapp,
+  rubika,
+  eitaa,
+  bale,
 }: BusinessHeaderProps) {
   const [open, setOpen] = useState<DetailKey>(null);
   const [openStatus, setOpenStatus] = useState<{
@@ -81,6 +102,15 @@ export function BusinessHeader({
   const toggle = (key: DetailKey) => {
     setOpen((prev) => (prev === key ? null : key));
   };
+
+  const hasSocial = !!(
+    instagram ||
+    telegram ||
+    whatsapp ||
+    rubika ||
+    eitaa ||
+    bale
+  );
 
   const detailText =
     open === "address"
@@ -233,56 +263,39 @@ export function BusinessHeader({
                 <span>تماس</span>
               </button>
             )}
-
-            {instagram && (
-              <a
-                href={
-                  instagram.startsWith("http")
-                    ? instagram
-                    : `https://instagram.com/${instagram.replace("@", "")}`
-                }
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-full border border-[#EDE8DF] bg-[#FAF7F2] flex items-center justify-center hover:border-[#D4AF37] hover:bg-white transition-colors cursor-pointer"
-                aria-label="اینستاگرام"
+            {hasSocial && (
+              <button
+                type="button"
+                onClick={() => toggle("social")}
+                className={`flex items-center gap-2 h-9 px-4 rounded-full border text-[12px] font-bold transition-all cursor-pointer ${
+                  open === "social"
+                    ? "bg-[#D4AF37] border-[#D4AF37] text-white shadow-md"
+                    : "bg-[#FAF7F2] border-[#EDE8DF] text-[#0F172A] hover:border-[#D4AF37] hover:bg-white"
+                }`}
               >
-                <Instagram className="w-3.5 h-3.5" />
-              </a>
-            )}
-            {telegram && (
-              <a
-                href={
-                  telegram.startsWith("http")
-                    ? telegram
-                    : `https://t.me/${telegram.replace("@", "")}`
-                }
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-full border border-[#EDE8DF] bg-[#FAF7F2] flex items-center justify-center text-[10px] font-bold hover:border-[#D4AF37] hover:bg-white transition-colors cursor-pointer"
-                aria-label="تلگرام"
-              >
-                TG
-              </a>
-            )}
-            {whatsapp && (
-              <a
-                href={
-                  whatsapp.startsWith("http")
-                    ? whatsapp
-                    : `https://wa.me/${whatsapp.replace(/\D/g, "")}`
-                }
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-full border border-[#EDE8DF] bg-[#FAF7F2] flex items-center justify-center text-[10px] font-bold hover:border-[#25D366] hover:bg-white transition-colors cursor-pointer"
-                aria-label="واتساپ"
-              >
-                WA
-              </a>
+                <Share className="w-3.5 h-3.5" />
+                <span>شبکه‌ها</span>
+              </button>
             )}
           </div>
 
           {/* نمایش جزئیات */}
-          {detailText && (
+          {open === "social" && hasSocial && (
+            <div className="mt-3">
+              <div className="bg-[#FAF7F2] border border-[#EDE8DF] rounded-2xl p-4">
+                <SocialLinks
+                  instagram={instagram}
+                  telegram={telegram}
+                  whatsapp={whatsapp}
+                  rubika={rubika}
+                  eitaa={eitaa}
+                  bale={bale}
+                />
+              </div>
+            </div>
+          )}
+
+          {detailText && open !== "social" && (
             <div className="mt-3">
               {open === "phone" ? (
                 <a
@@ -291,11 +304,35 @@ export function BusinessHeader({
                 >
                   📞 {detailText}
                 </a>
+              ) : open === "address" ? (
+                <div className="bg-[#FAF7F2] border border-[#EDE8DF] rounded-2xl p-4 space-y-3">
+                  <p className="text-center text-sm text-[#475569] leading-relaxed">
+                    📍 {detailText}
+                  </p>
+                  <div className="flex items-center justify-center gap-2 flex-wrap">
+                    <a
+                      href={googleMapsUrl(detailText)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-white border border-[#EDE8DF] text-[12px] font-bold text-[#0F172A] hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition cursor-pointer"
+                    >
+                      <Navigation className="w-3.5 h-3.5" />
+                      گوگل مپ
+                    </a>
+                    <a
+                      href={neshanMapsUrl(detailText)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-white border border-[#EDE8DF] text-[12px] font-bold text-[#0F172A] hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition cursor-pointer"
+                    >
+                      <Navigation className="w-3.5 h-3.5" />
+                      نشان
+                    </a>
+                  </div>
+                </div>
               ) : (
                 <div className="text-center text-sm text-[#475569] bg-[#FAF7F2] border border-[#EDE8DF] rounded-2xl px-4 py-2.5 leading-relaxed">
-                  {open === "address" && "📍 "}
-                  {open === "hours" && "🕐 "}
-                  {detailText}
+                  🕐 {detailText}
                 </div>
               )}
             </div>

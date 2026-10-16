@@ -18,6 +18,12 @@ interface Business {
   cover_url?: string | null;
   logo_url?: string | null;
   slug: string;
+  instagram?: string | null;
+  telegram?: string | null;
+  whatsapp?: string | null;
+  rubika?: string | null;
+  eitaa?: string | null;
+  bale?: string | null;
 }
 
 interface Category {
@@ -176,6 +182,12 @@ export function BusinessClient({
         phone={business.phone || undefined}
         coverUrl={business.cover_url || undefined}
         logoUrl={business.logo_url || undefined}
+        instagram={business.instagram || undefined}
+        telegram={business.telegram || undefined}
+        whatsapp={business.whatsapp || undefined}
+        rubika={business.rubika || undefined}
+        eitaa={business.eitaa || undefined}
+        bale={business.bale || undefined}
       />
 
       <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-[#EDE8DF]">

@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/ui/empty-state";
+import { cn } from "@/lib/utils";
 
 interface Category {
   id: string;
@@ -15,6 +16,24 @@ interface Category {
   icon?: string | null;
   is_active: boolean;
 }
+
+const EMOJI_GROUPS = {
+  همه: [
+    "☕", "🍵", "🍰", "🥐", "🍩", "🧁", "🍪", "🍫",
+    "🍔", "🍕", "🍟", "🌭", "🥤", "🍗", "🥪", "🌮",
+    "🍽️", "🍲", "🍜", "🥘", "🍱", "🥗", "🍖", "🍚",
+    "🛒", "🛍️", "📦", "🏪", "⭐", "✨", "🔥", "❤️",
+  ],
+  کافه: ["☕", "🍵", "🍰", "🥐", "🍩", "🧁", "🍪", "🍫"],
+  "فست‌فود": ["🍔", "🍕", "🍟", "🌭", "🥤", "🍗", "🥪", "🌮"],
+  رستوران: ["🍽️", "🍲", "🍜", "🥘", "🍱", "🥗", "🍖", "🍚"],
+  نوشیدنی: ["🥤", "🧃", "🥛", "☕", "🍵", "🍷", "🍹", "🧋"],
+  دسر: ["🍰", "🍩", "🧁", "🍪", "🍫", "🍦", "🍮", "🎂"],
+  فروشگاه: ["🛒", "🛍️", "📦", "🏪", "🧴", "🧺", "🥫", "🍯"],
+  سایر: ["⭐", "✨", "🔥", "❤️", "💎", "🎁", "🌟", "💫"],
+} as const;
+
+type GroupKey = keyof typeof EMOJI_GROUPS;
 
 export function CategoriesClient({
   initialCategories,
@@ -28,6 +47,7 @@ export function CategoriesClient({
   const [editing, setEditing] = useState<Category | null>(null);
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("");
+  const [activeGroup, setActiveGroup] = useState<GroupKey>("همه");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
@@ -36,6 +56,7 @@ export function CategoriesClient({
     setEditing(null);
     setName("");
     setIcon("");
+    setActiveGroup("همه");
     setShowForm(true);
   };
 
@@ -43,6 +64,7 @@ export function CategoriesClient({
     setEditing(cat);
     setName(cat.name);
     setIcon(cat.icon || "");
+    setActiveGroup("همه");
     setShowForm(true);
   };
 
@@ -108,6 +130,8 @@ export function CategoriesClient({
     toast.success("دسته‌بندی حذف شد");
   };
 
+  const groupKeys = Object.keys(EMOJI_GROUPS) as GroupKey[];
+
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center justify-between">
@@ -145,13 +169,13 @@ export function CategoriesClient({
                 <div className="flex gap-2">
                   <button
                     onClick={() => openEdit(cat)}
-                    className="p-2 text-navy/40 hover:text-navy"
+                    className="p-2 text-navy/40 hover:text-navy cursor-pointer"
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => deleteCategory(cat.id)}
-                    className="p-2 text-navy/40 hover:text-red-500"
+                    className="p-2 text-navy/40 hover:text-red-500 cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -164,12 +188,14 @@ export function CategoriesClient({
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md p-6 space-y-4">
-            <h2 className="text-lg font-bold text-navy">
-              {editing ? "ویرایش دسته بندی" : "افزودن دسته بندی"}
-            </h2>
+          <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-[#EDE8DF] px-5 py-4 rounded-t-3xl sm:rounded-t-3xl">
+              <h2 className="text-lg font-bold text-navy">
+                {editing ? "ویرایش دسته بندی" : "افزودن دسته بندی"}
+              </h2>
+            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="p-5 space-y-4">
               <div>
                 <label className="text-sm font-medium text-navy/70">
                   نام *
@@ -185,15 +211,72 @@ export function CategoriesClient({
 
               <div>
                 <label className="text-sm font-medium text-navy/70">
-                  آیکون (اختیاری - ایموجی)
+                  آیکون (اختیاری)
                 </label>
-                <input
-                  type="text"
-                  value={icon}
-                  onChange={(e) => setIcon(e.target.value)}
-                  placeholder="مثال: ☕ یا 🍰"
-                  className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50"
-                />
+
+                {/* پیش‌نمایش انتخاب */}
+                <div className="mt-1.5 flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={icon}
+                    onChange={(e) => setIcon(e.target.value)}
+                    placeholder="مثال: ☕"
+                    maxLength={2}
+                    className="flex-1 h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-center text-xl"
+                  />
+                  {icon && (
+                    <button
+                      type="button"
+                      onClick={() => setIcon("")}
+                      className="h-11 px-3 rounded-2xl bg-[#FAF7F2] border border-[#EDE8DF] text-xs font-bold text-navy/60 hover:bg-[#EFE9DF] cursor-pointer"
+                    >
+                      پاک
+                    </button>
+                  )}
+                </div>
+
+                {/* انتخاب نوع */}
+                <div className="mt-3">
+                  <p className="text-xs text-navy/50 mb-2">
+                    انتخاب از میان پیشنهادها:
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {groupKeys.map((key) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setActiveGroup(key)}
+                        className={cn(
+                          "h-8 px-3 rounded-lg text-[11px] font-bold transition cursor-pointer",
+                          activeGroup === key
+                            ? "bg-[#D4AF37] text-white shadow-sm"
+                            : "bg-[#FAF7F2] text-navy/70 hover:bg-[#EFE9DF]"
+                        )}
+                      >
+                        {key}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* گرید ایموجی‌ها */}
+                  <div className="grid grid-cols-8 gap-1 bg-[#FAF7F2] border border-[#EDE8DF] rounded-2xl p-2">
+                    {EMOJI_GROUPS[activeGroup].map((emoji, idx) => (
+                      <button
+                        key={`${activeGroup}-${idx}`}
+                        type="button"
+                        onClick={() => setIcon(emoji)}
+                        className={cn(
+                          "w-9 h-9 rounded-lg flex items-center justify-center text-lg transition cursor-pointer",
+                          icon === emoji
+                            ? "bg-[#D4AF37] shadow-sm"
+                            : "hover:bg-white"
+                        )}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div className="flex gap-3 pt-2">
