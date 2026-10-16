@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth-admin";
 import { createClient } from "@/lib/supabase/server";
 import { AdminBusinessesClient } from "./AdminBusinessesClient";
 import { CreateOwnerForm } from "@/components/admin/CreateOwnerForm";
+import { AdminHeader } from "@/components/admin/AdminHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,10 @@ export default async function AdminPage() {
               مدیریت تمام کسب‌وکارها
             </p>
           </div>
-          <CreateOwnerForm />
+          <div className="flex items-center gap-2 flex-wrap">
+            <CreateOwnerForm />
+            <AdminHeader />
+          </div>
         </div>
         <AdminBusinessesClient initialBusinesses={businesses || []} />
       </div>
