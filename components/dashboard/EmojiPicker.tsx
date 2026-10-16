@@ -1,49 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { EMOJI_GROUPS } from "./emoji-data";
+import { EMOJI_GROUPS, type EmojiGroup } from "./emoji-data";
 
 type Props = {
   value: string;
   onChange: (emoji: string) => void;
 };
-
-function emojiToTwemojiUrl(emoji: string): string {
-  const codePoints = [...emoji]
-    .map((char) => char.codePointAt(0)?.toString(16))
-    .filter(Boolean);
-  return `https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg/${codePoints.join(
-    "-"
-  )}.svg`;
-}
-
-function EmojiImage({
-  emoji,
-  size = 24,
-}: {
-  emoji: string;
-  size?: number;
-}) {
-  const [failed, setFailed] = useState(false);
-
-  if (failed) {
-    return (
-      <span style={{ fontSize: size * 0.8, lineHeight: 1 }}>{emoji}</span>
-    );
-  }
-
-  return (
-    <img
-      src={emojiToTwemojiUrl(emoji)}
-      alt={emoji}
-      width={size}
-      height={size}
-      className="pointer-events-none select-none"
-      loading="lazy"
-      onError={() => setFailed(true)}
-    />
-  );
-}
 
 export function EmojiPicker({ value, onChange }: Props) {
   const [open, setOpen] = useState(false);
@@ -52,14 +15,17 @@ export function EmojiPicker({ value, onChange }: Props) {
 
   useEffect(() => {
     if (!open) return;
+
     function onDocClick(e: MouseEvent) {
       if (!rootRef.current?.contains(e.target as Node)) {
         setOpen(false);
       }
     }
+
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
+
     document.addEventListener("mousedown", onDocClick);
     document.addEventListener("keydown", onKey);
     return () => {
@@ -68,8 +34,9 @@ export function EmojiPicker({ value, onChange }: Props) {
     };
   }, [open]);
 
-  const group =
-    EMOJI_GROUPS.find((g) => g.id === activeGroup) ?? EMOJI_GROUPS[0];
+  const group: EmojiGroup =
+    EMOJI_GROUPS.find((g: EmojiGroup) => g.id === activeGroup) ??
+    EMOJI_GROUPS[0];
 
   return (
     <div ref={rootRef} className="relative">
@@ -81,10 +48,10 @@ export function EmojiPicker({ value, onChange }: Props) {
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="h-11 min-w-[3rem] px-3 rounded-2xl border border-[#EDE8DF] bg-white flex items-center justify-center hover:border-[#D4AF37] transition cursor-pointer"
+          className="h-11 min-w-[3rem] px-3 rounded-2xl border border-[#EDE8DF] bg-white text-2xl flex items-center justify-center hover:border-[#D4AF37] transition cursor-pointer"
           aria-label="انتخاب ایموجی"
         >
-          {value ? <EmojiImage emoji={value} size={24} /> : <span className="text-xl text-[#94A3B8]">➕</span>}
+          {value || "➕"}
         </button>
 
         {value ? (
@@ -104,13 +71,12 @@ export function EmojiPicker({ value, onChange }: Props) {
 
       {open && (
         <div
-          className="absolute z-[60] mt-2 w-[min(100vw-2rem,20rem)] rounded-3xl border border-[#EDE8DF] bg-white shadow-[0_10px_30px_-5px_rgba(0,0,0,0.1)] p-3"
+          className="absolute z-[60] mt-2 w-[min(100%-0px,20rem)] max-w-[calc(100vw-2rem)] rounded-3xl border border-[#EDE8DF] bg-white shadow-lg p-3"
           role="dialog"
           aria-label="انتخابگر ایموجی"
         >
-          {/* تب دسته‌ها */}
           <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-hide">
-            {EMOJI_GROUPS.map((g) => (
+            {EMOJI_GROUPS.map((g: EmojiGroup) => (
               <button
                 key={g.id}
                 type="button"
@@ -126,9 +92,8 @@ export function EmojiPicker({ value, onChange }: Props) {
             ))}
           </div>
 
-          {/* گرید ایموجی */}
           <div className="grid grid-cols-6 gap-1 max-h-48 overflow-y-auto pt-1">
-            {group.emojis.map((emoji, idx) => (
+            {group.emojis.map((emoji: string, idx: number) => (
               <button
                 key={`${emoji}-${idx}`}
                 type="button"
@@ -136,10 +101,10 @@ export function EmojiPicker({ value, onChange }: Props) {
                   onChange(emoji);
                   setOpen(false);
                 }}
-                className="h-10 rounded-xl hover:bg-[#F7F6F3] flex items-center justify-center transition cursor-pointer"
+                className="h-10 rounded-xl text-xl hover:bg-[#F7F6F3] flex items-center justify-center transition cursor-pointer"
                 title={emoji}
               >
-                <EmojiImage emoji={emoji} size={24} />
+                {emoji}
               </button>
             ))}
           </div>
