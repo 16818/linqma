@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { AdminModeBanner } from "@/components/dashboard/AdminModeBanner";
 
 export default async function DashboardPage({
   searchParams,
@@ -29,7 +28,6 @@ export default async function DashboardPage({
 
   const { business: businessParam } = await searchParams;
 
-  // گرفتن نقش کاربر
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
@@ -38,7 +36,6 @@ export default async function DashboardPage({
 
   const isAdmin = profile?.role === "admin";
 
-  // اگر admin است و businessParam ندارد → همیشه به /admin
   if (isAdmin && !businessParam) {
     redirect("/admin");
   }
@@ -52,7 +49,6 @@ export default async function DashboardPage({
 
   let isAdminMode = false;
 
-  // حالت مدیر: اگر businessParam هست و کاربر admin است
   if (businessParam) {
     if (isAdmin) {
       const { data: targetBusiness } = await supabase
@@ -68,7 +64,6 @@ export default async function DashboardPage({
     }
   }
 
-  // حالت عادی: کسب‌وکار خود کاربر
   if (!business) {
     const { data: ownBusiness } = await supabase
       .from("businesses")
@@ -113,13 +108,6 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-6 max-w-5xl">
-      {isAdminMode && (
-        <AdminModeBanner
-          businessName={business.name}
-          businessId={business.id}
-        />
-      )}
-
       <div>
         <h1 className="text-2xl font-bold text-navy">
           سلام، {business.name} 👋

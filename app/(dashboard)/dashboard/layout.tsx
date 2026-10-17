@@ -1,3 +1,6 @@
+import { Suspense } from "react";
+import { AdminModeBannerAuto } from "@/components/dashboard/AdminModeBannerAuto";
+
 export const dynamic = "force-dynamic";
 
 export default function DashboardSectionLayout({
@@ -5,5 +8,12 @@ export default function DashboardSectionLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <Suspense fallback={null}>
+        <AdminModeBannerAuto />
+      </Suspense>
+      {children}
+    </>
+  );
 }

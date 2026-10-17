@@ -1,7 +1,6 @@
 ﻿import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { SettingsClient } from "./SettingsClient";
-import { AdminModeBanner } from "@/components/dashboard/AdminModeBanner";
 
 export default async function SettingsPage({
   searchParams,
@@ -18,7 +17,6 @@ export default async function SettingsPage({
   const { business: businessParam } = await searchParams;
 
   let business: any = null;
-  let isAdminMode = false;
 
   if (businessParam) {
     const { data: profile } = await supabase
@@ -38,7 +36,6 @@ export default async function SettingsPage({
 
       if (targetBusiness) {
         business = targetBusiness;
-        isAdminMode = true;
       }
     }
   }
@@ -59,15 +56,5 @@ export default async function SettingsPage({
     redirect("/dashboard/onboarding");
   }
 
-  return (
-    <>
-      {isAdminMode && (
-        <AdminModeBanner
-          businessName={business.name}
-          businessId={business.id}
-        />
-      )}
-      <SettingsClient business={business} />
-    </>
-  );
+  return <SettingsClient business={business} />;
 }

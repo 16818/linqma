@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { CategoriesClient } from "./CategoriesClient";
-import { AdminModeBanner } from "@/components/dashboard/AdminModeBanner";
 
 export default async function CategoriesPage({
   searchParams,
@@ -25,8 +24,6 @@ export default async function CategoriesPage({
     is_published: boolean;
   } | null = null;
 
-  let isAdminMode = false;
-
   if (businessParam) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -45,7 +42,6 @@ export default async function CategoriesPage({
 
       if (targetBusiness) {
         business = targetBusiness;
-        isAdminMode = true;
       }
     }
   }
@@ -73,17 +69,9 @@ export default async function CategoriesPage({
     .order("sort_order");
 
   return (
-    <>
-      {isAdminMode && (
-        <AdminModeBanner
-          businessName={business.name}
-          businessId={business.id}
-        />
-      )}
-      <CategoriesClient
-        initialCategories={categories || []}
-        businessId={business.id}
-      />
-    </>
+    <CategoriesClient
+      initialCategories={categories || []}
+      businessId={business.id}
+    />
   );
 }

@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { OrdersClient } from "./OrdersClient";
-import { AdminModeBanner } from "@/components/dashboard/AdminModeBanner";
 
 export default async function OrdersPage({
   searchParams,
@@ -18,8 +17,8 @@ export default async function OrdersPage({
   const { business: businessParam } = await searchParams;
 
   let business: { id: string; name: string } | null = null;
-  let isAdminMode = false;
 
+  // حالت مدیر: اگر پارامتر business هست
   if (businessParam) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -38,11 +37,11 @@ export default async function OrdersPage({
 
       if (targetBusiness) {
         business = targetBusiness;
-        isAdminMode = true;
       }
     }
   }
 
+  // حالت عادی: بدون businessParam
   if (!business) {
     const { data: ownBusiness } = await supabase
       .from("businesses")
@@ -55,7 +54,9 @@ export default async function OrdersPage({
     business = ownBusiness;
   }
 
-  if (!business) redirect("/dashboard/onboarding");
+  if (!business) {
+    redirect("/dashboard/onboarding");
+  }
 
   const { data: orders } = await supabase
     .from("orders")
@@ -64,15 +65,5 @@ export default async function OrdersPage({
     .order("created_at", { ascending: false })
     .limit(100);
 
-  return (
-    <>
-      {isAdminMode && (
-        <AdminModeBanner
-          businessName={business.name}
-          businessId={business.id}
-        />
-      )}
-      <OrdersClient initialOrders={orders || []} />
-    </>
-  );
+  return <OrdersClient initialOrders={orders || []} />;
 }

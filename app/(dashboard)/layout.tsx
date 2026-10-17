@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
   Package,
@@ -15,49 +15,53 @@ import {
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
-const menuGroups = [
-  {
-    title: "فروشگاه",
-    items: [
-      { href: "/dashboard", label: "داشبورد", icon: LayoutDashboard },
-      { href: "/dashboard/products", label: "محصولات", icon: Package },
-      { href: "/dashboard/categories", label: "دسته‌بندی‌ها", icon: Tags },
-    ],
-  },
-  {
-    title: "عملیات",
-    items: [
-      { href: "/dashboard/pos", label: "صندوق", icon: ShoppingCart },
-      { href: "/dashboard/orders", label: "سفارش‌ها", icon: Receipt },
-    ],
-  },
-  {
-    title: "مدیریت",
-    items: [
-      {
-        href: "/dashboard/settings",
-        label: "تنظیمات و QR",
-        icon: Settings,
-      },
-    ],
-  },
-];
-
-const mobileMenuItems = [
-  { href: "/dashboard", label: "داشبورد", icon: LayoutDashboard },
-  { href: "/dashboard/pos", label: "صندوق", icon: ShoppingCart },
-  { href: "/dashboard/orders", label: "سفارش‌ها", icon: Receipt },
-  { href: "/dashboard/products", label: "محصولات", icon: Package },
-];
-
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const supabase = createClient();
+
+  const businessId = searchParams.get("business");
+  const qs = businessId ? `?business=${businessId}` : "";
+
+  const menuGroups = [
+    {
+      title: "فروشگاه",
+      items: [
+        { href: `/dashboard${qs}`, label: "داشبورد", icon: LayoutDashboard },
+        { href: `/dashboard/products${qs}`, label: "محصولات", icon: Package },
+        { href: `/dashboard/categories${qs}`, label: "دسته‌بندی‌ها", icon: Tags },
+      ],
+    },
+    {
+      title: "عملیات",
+      items: [
+        { href: `/dashboard/pos${qs}`, label: "صندوق", icon: ShoppingCart },
+        { href: `/dashboard/orders${qs}`, label: "سفارش‌ها", icon: Receipt },
+      ],
+    },
+    {
+      title: "مدیریت",
+      items: [
+        {
+          href: `/dashboard/settings${qs}`,
+          label: "تنظیمات و QR",
+          icon: Settings,
+        },
+      ],
+    },
+  ];
+
+  const mobileMenuItems = [
+    { href: `/dashboard${qs}`, label: "داشبورد", icon: LayoutDashboard },
+    { href: `/dashboard/pos${qs}`, label: "صندوق", icon: ShoppingCart },
+    { href: `/dashboard/orders${qs}`, label: "سفارش‌ها", icon: Receipt },
+    { href: `/dashboard/products${qs}`, label: "محصولات", icon: Package },
+  ];
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -66,12 +70,11 @@ export default function DashboardLayout({
   };
 
   const isActive = (href: string) => {
-    return pathname === href;
+    return pathname === href.split("?")[0];
   };
 
   return (
     <div className="min-h-screen bg-[#F7F6F3] font-[Vazirmatn] flex" dir="rtl">
-      {/* سایدبار دسکتاپ */}
       <aside className="hidden md:flex w-64 flex-col bg-[#0F172A] text-white">
         <div className="p-6 border-b border-white/10">
           <div className="flex items-center gap-2.5">
@@ -100,7 +103,7 @@ export default function DashboardLayout({
                   const active = isActive(item.href);
                   return (
                     <Link
-                      key={item.href}
+                      key={item.label}
                       href={item.href}
                       className={cn(
                         "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer",
@@ -130,9 +133,7 @@ export default function DashboardLayout({
         </div>
       </aside>
 
-      {/* محتوای اصلی */}
       <main className="flex-1 overflow-auto">
-        {/* هدر موبایل */}
         <div className="md:hidden sticky top-0 z-20 bg-[#0F172A] text-white px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-[#D4AF37] flex items-center justify-center">
@@ -155,16 +156,15 @@ export default function DashboardLayout({
           </button>
         </div>
 
-        <div className="p-4 md:p-8 pb-24 md:pb-8">{children}</div>
+        <div className="p-4 md:p-8 pb-24 md:p-8">{children}</div>
       </main>
 
-      {/* منوی پایین موبایل */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#EDE8DF] flex justify-around py-2 z-30 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.06)]">
         {mobileMenuItems.map((item) => {
-          const active = pathname === item.href;
+          const active = pathname === item.href.split("?")[0];
           return (
             <Link
-              key={item.href}
+              key={item.label}
               href={item.href}
               className={cn(
                 "flex flex-col items-center gap-1 px-3 py-2 text-[10px] font-medium transition-colors cursor-pointer",

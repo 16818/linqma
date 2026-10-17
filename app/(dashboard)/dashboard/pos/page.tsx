@@ -16,7 +16,6 @@ import {
   Minus,
   Save,
 } from "lucide-react";
-import { AdminModeBanner } from "@/components/dashboard/AdminModeBanner";
 import { AddItemsModal } from "@/components/business/AddItemsModal";
 
 interface OrderItem {
@@ -63,8 +62,6 @@ export default function POSPage({
   const [notFound, setNotFound] = useState(false);
 
   const [businessId, setBusinessId] = useState<string | null>(null);
-  const [isAdminMode, setIsAdminMode] = useState(false);
-  const [businessName, setBusinessName] = useState<string>("");
   const [ready, setReady] = useState(false);
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -101,14 +98,12 @@ export default function POSPage({
           if (profile?.role === "admin") {
             const { data: targetBusiness } = await supabase
               .from("businesses")
-              .select("id, name")
+              .select("id")
               .eq("id", businessParam)
               .maybeSingle();
 
             if (targetBusiness) {
               setBusinessId(targetBusiness.id);
-              setBusinessName(targetBusiness.name);
-              setIsAdminMode(true);
               finalBusinessId = targetBusiness.id;
             }
           }
@@ -123,7 +118,7 @@ export default function POSPage({
         if (user) {
           const { data: ownBusiness } = await supabase
             .from("businesses")
-            .select("id, name")
+            .select("id")
             .eq("owner_id", user.id)
             .order("created_at", { ascending: false })
             .limit(1)
@@ -131,7 +126,6 @@ export default function POSPage({
 
           if (ownBusiness) {
             setBusinessId(ownBusiness.id);
-            setBusinessName(ownBusiness.name);
             finalBusinessId = ownBusiness.id;
           }
         }
@@ -395,13 +389,6 @@ export default function POSPage({
 
   return (
     <div className="max-w-3xl space-y-6">
-      {isAdminMode && (
-        <AdminModeBanner
-          businessName={businessName}
-          businessId={businessId || ""}
-        />
-      )}
-
       <div>
         <h1 className="text-2xl font-bold text-navy">صندوق</h1>
         <p className="text-navy/60 text-sm mt-1">
