@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { createOwnerUser } from "@/app/admin/actions/create-user";
 import { toast } from "sonner";
-import { Plus, X, Copy, Check } from "lucide-react";
+import { Plus, X } from "lucide-react";
+import { DeliveryPack } from "./DeliveryPack";
 
 export function CreateOwnerForm() {
   const [open, setOpen] = useState(false);
@@ -17,10 +18,9 @@ export function CreateOwnerForm() {
   const [createdSecret, setCreatedSecret] = useState<{
     email: string;
     password: string;
-    businessId?: string;
+    slug?: string;
+    businessName?: string;
   } | null>(null);
-
-  const [copied, setCopied] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,7 +45,8 @@ export function CreateOwnerForm() {
     setCreatedSecret({
       email: result.email,
       password: result.password,
-      businessId: result.businessId,
+      slug: result.slug,
+      businessName: businessName || undefined,
     });
 
     toast.success(
@@ -62,20 +63,9 @@ export function CreateOwnerForm() {
     setBusinessSlug("");
   }
 
-  function copyCredentials() {
-    if (!createdSecret) return;
-
-    const text = `ایمیل: ${createdSecret.email}\nرمز: ${createdSecret.password}`;
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    toast.success("اطلاعات کپی شد");
-    setTimeout(() => setCopied(false), 2000);
-  }
-
   function closeAndReset() {
     setOpen(false);
     setCreatedSecret(null);
-    setCopied(false);
   }
 
   return (
@@ -99,13 +89,15 @@ export function CreateOwnerForm() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* هدر */}
-            <div className="sticky top-0 z-10 bg-white border-b border-[#EDE8DF] p-4 flex items-center justify-between">
+            <div className="sticky top-0 z-10 bg-white border-b border-[#EDE8DF] p-4 flex items-center justify-between print:hidden">
               <div>
                 <h3 className="font-bold text-[#0F172A]">
-                  ساخت کاربر جدید
+                  {createdSecret ? "بسته تحویل" : "ساخت کاربر جدید"}
                 </h3>
                 <p className="text-xs text-[#64748B] mt-0.5">
-                  کاربر به عنوان صاحب کسب‌وکار ساخته می‌شود
+                  {createdSecret
+                    ? "اطلاعات ورود و لینک ویترین"
+                    : "کاربر به عنوان صاحب کسب‌وکار ساخته می‌شود"}
                 </p>
               </div>
               <button
@@ -118,69 +110,19 @@ export function CreateOwnerForm() {
             </div>
 
             {createdSecret ? (
-              // نمایش اطلاعات ورود
-              <div className="p-5 space-y-4">
-                <div className="text-center py-3">
-                  <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
-                    <Check className="w-7 h-7 text-green-600" strokeWidth={3} />
-                  </div>
-                  <p className="font-bold text-[#0F172A]">
-                    کاربر با موفقیت ساخته شد
-                  </p>
-                  <p className="text-xs text-[#64748B] mt-1">
-                    این اطلاعات را یک‌بار کپی کنید و به مشتری بدهید
-                  </p>
-                </div>
-
-                <div className="bg-[#FAF7F2] rounded-2xl p-4 space-y-2">
-                  <div>
-                    <p className="text-[10px] text-[#64748B] mb-1">ایمیل</p>
-                    <p
-                      className="font-mono text-sm text-[#0F172A] break-all"
-                      dir="ltr"
-                    >
-                      {createdSecret.email}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-[#64748B] mb-1">رمز عبور</p>
-                    <p
-                      className="font-mono text-sm text-[#0F172A] break-all"
-                      dir="ltr"
-                    >
-                      {createdSecret.password}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3">
-                  <p className="text-xs text-amber-800 leading-relaxed">
-                    ⚠️ این رمز دیگر نمایش داده نمی‌شود. الان کپی کنید.
-                  </p>
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={copyCredentials}
-                    className="flex-1 h-11 rounded-2xl bg-[#D4AF37] text-white font-bold cursor-pointer hover:bg-[#C4A034] transition flex items-center justify-center gap-2"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="w-4 h-4" />
-                        کپی شد
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4" />
-                        کپی اطلاعات
-                      </>
-                    )}
-                  </button>
+              <div className="p-5">
+                <DeliveryPack
+                  email={createdSecret.email}
+                  password={createdSecret.password}
+                  slug={createdSecret.slug}
+                  businessName={createdSecret.businessName}
+                />
+                <div className="mt-5 print:hidden">
                   <button
                     onClick={closeAndReset}
-                    className="flex-1 h-11 rounded-2xl bg-white border border-[#EDE8DF] text-[#0F172A] font-bold cursor-pointer hover:bg-[#EFE9DF] transition"
+                    className="w-full h-11 rounded-2xl bg-white border border-[#EDE8DF] text-[#0F172A] font-bold cursor-pointer hover:bg-[#EFE9DF] transition"
                   >
-                    بستن
+                    ساخت بعدی / بستن
                   </button>
                 </div>
               </div>

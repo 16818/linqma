@@ -11,6 +11,7 @@ export type CreateUserResult =
       email: string;
       password: string;
       businessId?: string;
+      slug?: string;
     }
   | { ok: false; error: string };
 
@@ -85,6 +86,7 @@ export async function createOwnerUser(input: {
   });
 
   let businessId: string | undefined;
+  let savedSlug: string | undefined;
 
   const businessName = input.businessName?.trim();
   const businessSlug = input.businessSlug
@@ -101,7 +103,7 @@ export async function createOwnerUser(input: {
         is_published: false,
         plan: "basic",
       })
-      .select("id")
+      .select("id, slug")
       .single();
 
     if (bizError) {
@@ -116,8 +118,9 @@ export async function createOwnerUser(input: {
       };
     }
     businessId = biz.id;
+    savedSlug = biz.slug;
   }
 
   revalidatePath("/admin");
-  return { ok: true, userId, email, password, businessId };
+  return { ok: true, userId, email, password, businessId, slug: savedSlug };
 }
