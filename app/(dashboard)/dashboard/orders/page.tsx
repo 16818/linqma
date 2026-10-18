@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { OrdersClient } from "./OrdersClient";
+import { resolveDashboardBusiness } from "@/lib/dashboard-business";
 
 export default async function OrdersPage({
   searchParams,
@@ -14,45 +15,7 @@ export default async function OrdersPage({
 
   if (!user) redirect("/login");
 
-  const { business: businessParam } = await searchParams;
-
-  let business: { id: string; name: string } | null = null;
-
-  // حالت مدیر: اگر پارامتر business هست
-  if (businessParam) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    const isAdmin = profile?.role === "admin";
-
-    if (isAdmin) {
-      const { data: targetBusiness } = await supabase
-        .from("businesses")
-        .select("id, name")
-        .eq("id", businessParam)
-        .maybeSingle();
-
-      if (targetBusiness) {
-        business = targetBusiness;
-      }
-    }
-  }
-
-  // حالت عادی: بدون businessParam
-  if (!business) {
-    const { data: ownBusiness } = await supabase
-      .from("businesses")
-      .select("id, name")
-      .eq("owner_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    business = ownBusiness;
-  }
+  const business = await resolveDashboardBusiness(searchParams);
 
   if (!business) {
     redirect("/dashboard/onboarding");

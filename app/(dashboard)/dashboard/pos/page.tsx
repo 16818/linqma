@@ -103,7 +103,6 @@ export default function POSPage({
               .maybeSingle();
 
             if (targetBusiness) {
-              setBusinessId(targetBusiness.id);
               finalBusinessId = targetBusiness.id;
             }
           }
@@ -125,13 +124,13 @@ export default function POSPage({
             .maybeSingle();
 
           if (ownBusiness) {
-            setBusinessId(ownBusiness.id);
             finalBusinessId = ownBusiness.id;
           }
         }
       }
 
       if (finalBusinessId) {
+        setBusinessId(finalBusinessId);
         const { data: productsData } = await supabase
           .from("products")
           .select("*")
@@ -160,13 +159,13 @@ export default function POSPage({
     setNotFound(false);
     setOrder(null);
 
-    const query = supabase
+        let query = supabase
       .from("orders")
       .select("*")
       .eq("short_code", cleanCode);
 
     if (businessId) {
-      query.eq("business_id", businessId);
+      query = query.eq("business_id", businessId);
     }
 
     const { data, error } = await query.maybeSingle();
