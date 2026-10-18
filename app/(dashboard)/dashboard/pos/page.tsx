@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import {
@@ -17,6 +18,7 @@ import {
   Save,
 } from "lucide-react";
 import { AddItemsModal } from "@/components/business/AddItemsModal";
+import { findOrderByCode } from "./actions";
 
 interface OrderItem {
   id: string;
@@ -50,12 +52,11 @@ interface Order {
   table_number?: string | null;
 }
 
-export default function POSPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ business?: string }>;
-}) {
+export default function POSPage() {
   const supabase = createClient();
+  const searchParams = useSearchParams();
+  const businessQuery = searchParams.get("business");
+
   const [code, setCode] = useState("");
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(false);
@@ -78,12 +79,9 @@ export default function POSPage({
 
   useEffect(() => {
     (async () => {
-      const sp = await searchParams;
-      const businessParam = sp.business;
-
       let finalBusinessId: string | null = null;
 
-      if (businessParam) {
+      if (businessQuery) {
         const {
           data: { user },
         } = await supabase.auth.getUser();
@@ -99,7 +97,7 @@ export default function POSPage({
             const { data: targetBusiness } = await supabase
               .from("businesses")
               .select("id")
-              .eq("id", businessParam)
+              .eq("id", businessQuery)
               .maybeSingle();
 
             if (targetBusiness) {
@@ -143,13 +141,14 @@ export default function POSPage({
 
       setReady(true);
     })();
-  }, [searchParams, supabase]);
+  }, [businessQuery, supabase]);
 
   const searchOrder = async () => {
     const cleanCode = code
       .trim()
       .toUpperCase()
       .replace(/[^A-Z0-9]/g, "");
+
     if (!cleanCode) {
       toast.error("کد سفارش را وارد کنید");
       return;
@@ -159,29 +158,23 @@ export default function POSPage({
     setNotFound(false);
     setOrder(null);
 
-        let query = supabase
-      .from("orders")
-      .select("*")
-      .eq("short_code", cleanCode);
-
-    if (businessId) {
-      query = query.eq("business_id", businessId);
-    }
-
-    const { data, error } = await query.maybeSingle();
+    const result = await findOrderByCode({
+      code: cleanCode,
+      businessQuery,
+    });
 
     setLoading(false);
 
-    if (error) {
-      toast.error("خطا در جستجو");
+    if (!result.ok) {
+      if (result.error.includes("پیدا نشد")) {
+        setNotFound(true);
+      } else {
+        toast.error(result.error);
+      }
       return;
     }
 
-    if (!data) {
-      setNotFound(true);
-      return;
-    }
-
+    const data = result.order as unknown as Order;
     setOrder(data);
     setEditItems(data.items);
     setEditName(data.customer_name || "");
