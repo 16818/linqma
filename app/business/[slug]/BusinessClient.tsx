@@ -18,6 +18,7 @@ interface Business {
   cover_url?: string | null;
   logo_url?: string | null;
   slug: string;
+  plan: string;
   instagram?: string | null;
   telegram?: string | null;
   whatsapp?: string | null;
@@ -182,6 +183,7 @@ export function BusinessClient({
         phone={business.phone || undefined}
         coverUrl={business.cover_url || undefined}
         logoUrl={business.logo_url || undefined}
+        plan={business.plan}
         instagram={business.instagram || undefined}
         telegram={business.telegram || undefined}
         whatsapp={business.whatsapp || undefined}

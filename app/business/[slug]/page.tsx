@@ -2,11 +2,11 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { BusinessClient } from "./BusinessClient";
 
-interface Props {
+export default async function BusinessPage({
+  params,
+}: {
   params: Promise<{ slug: string }>;
-}
-
-export default async function BusinessPage({ params }: Props) {
+}) {
   const { slug } = await params;
   const supabase = await createClient();
 
@@ -17,15 +17,12 @@ export default async function BusinessPage({ params }: Props) {
     .eq("is_published", true)
     .maybeSingle();
 
-  if (!business) {
-    notFound();
-  }
+  if (!business) notFound();
 
   const { data: categories } = await supabase
     .from("categories")
-    .select("*")
+    .select("id, name, icon")
     .eq("business_id", business.id)
-    .eq("is_active", true)
     .order("sort_order");
 
   const { data: products } = await supabase

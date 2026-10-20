@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { MapPin, Clock, Phone, Share2, Navigation, Share } from "lucide-react";
 import { SocialLinks } from "@/components/business/SocialLinks";
+import { getPlanConfig } from "@/lib/plans";
 
 interface BusinessHeaderProps {
   name: string;
@@ -12,6 +13,7 @@ interface BusinessHeaderProps {
   phone?: string;
   coverUrl?: string;
   logoUrl?: string;
+  plan?: string;
   instagram?: string;
   telegram?: string;
   whatsapp?: string;
@@ -78,6 +80,7 @@ export function BusinessHeader({
   phone,
   coverUrl,
   logoUrl,
+  plan,
   instagram,
   telegram,
   whatsapp,
@@ -90,6 +93,9 @@ export function BusinessHeader({
     isOpen: boolean;
     label: string;
   } | null>(null);
+
+  const planConfig = getPlanConfig(plan);
+  const showAddressLink = planConfig.features.showAddress;
 
   useEffect(() => {
     setOpenStatus(getOpenStatus(workingHours));
@@ -153,7 +159,6 @@ export function BusinessHeader({
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent pointer-events-none" />
 
-        {/* دکمه اشتراک‌گذاری */}
         <button
           type="button"
           onClick={handleShare}
@@ -167,7 +172,7 @@ export function BusinessHeader({
       {/* کارت اصلی */}
       <div className="max-w-3xl mx-auto px-4 -mt-20 sm:-mt-24 relative z-10">
         <div className="bg-white rounded-[2rem] shadow-[0_20px_60px_-20px_rgba(0,0,0,0.18)] border border-[#EDE8DF]/60 pt-16 pb-5 px-5 sm:pt-20 sm:pb-6 sm:px-8 relative">
-          {/* لوگو — وسط بالا */}
+          {/* لوگو */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
             <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-[5px] border-white bg-white shadow-[0_10px_30px_-8px_rgba(0,0,0,0.25)] overflow-hidden ring-1 ring-[#EDE8DF]">
               {logoUrl ? (
@@ -184,7 +189,7 @@ export function BusinessHeader({
             </div>
           </div>
 
-          {/* بج باز/بسته در گوشه بالا-چپ */}
+          {/* بج باز/بسته */}
           {openStatus && (
             <div className="absolute top-3 left-5 sm:left-8">
               <span
@@ -206,7 +211,7 @@ export function BusinessHeader({
             </div>
           )}
 
-          {/* نام + توضیحات — وسط‌چین */}
+          {/* نام + توضیحات */}
           <div className="text-center">
             <h1 className="text-[22px] sm:text-[26px] font-black text-[#0F172A] tracking-tight leading-tight">
               {name}
@@ -309,26 +314,28 @@ export function BusinessHeader({
                   <p className="text-center text-sm text-[#475569] leading-relaxed">
                     📍 {detailText}
                   </p>
-                  <div className="flex items-center justify-center gap-2 flex-wrap">
-                    <a
-                      href={googleMapsUrl(detailText)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-white border border-[#EDE8DF] text-[12px] font-bold text-[#0F172A] hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition cursor-pointer"
-                    >
-                      <Navigation className="w-3.5 h-3.5" />
-                      گوگل مپ
-                    </a>
-                    <a
-                      href={neshanMapsUrl(detailText)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-white border border-[#EDE8DF] text-[12px] font-bold text-[#0F172A] hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition cursor-pointer"
-                    >
-                      <Navigation className="w-3.5 h-3.5" />
-                      نشان
-                    </a>
-                  </div>
+                  {showAddressLink && (
+                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                      <a
+                        href={googleMapsUrl(detailText)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-white border border-[#EDE8DF] text-[12px] font-bold text-[#0F172A] hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition cursor-pointer"
+                      >
+                        <Navigation className="w-3.5 h-3.5" />
+                        گوگل مپ
+                      </a>
+                      <a
+                        href={neshanMapsUrl(detailText)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-white border border-[#EDE8DF] text-[12px] font-bold text-[#0F172A] hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition cursor-pointer"
+                      >
+                        <Navigation className="w-3.5 h-3.5" />
+                        نشان
+                      </a>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center text-sm text-[#475569] bg-[#FAF7F2] border border-[#EDE8DF] rounded-2xl px-4 py-2.5 leading-relaxed">
