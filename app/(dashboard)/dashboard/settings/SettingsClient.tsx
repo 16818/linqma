@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Download } from "lucide-react";
 import QRCode from "qrcode";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { getPlanConfig } from "@/lib/plans";
 
 interface Business {
   id: string;
@@ -21,6 +22,7 @@ interface Business {
   logo_url?: string | null;
   cover_url?: string | null;
   is_published: boolean;
+  plan?: string;
   instagram?: string | null;
   telegram?: string | null;
   whatsapp?: string | null;
@@ -52,6 +54,21 @@ export function SettingsClient({ business }: { business: Business }) {
   const router = useRouter();
   const supabase = createClient();
 
+  const planConfig = useMemo(() => getPlanConfig(business.plan), [business.plan]);
+  const socialLimit = planConfig.features.socialLinksLimit;
+
+  const allSocials = [
+    { key: "instagram", label: "اینستاگرام", value: instagram, setter: setInstagram, placeholder: "@username یا لینک کامل" },
+    { key: "telegram", label: "تلگرام", value: telegram, setter: setTelegram, placeholder: "@username یا لینک کامل" },
+    { key: "whatsapp", label: "واتساپ", value: whatsapp, setter: setWhatsapp, placeholder: "09123456789" },
+    { key: "rubika", label: "روبیکا", value: rubika, setter: setRubika, placeholder: "نام کاربری یا لینک کامل" },
+    { key: "eitaa", label: "ایتا", value: eitaa, setter: setEitaa, placeholder: "نام کاربری یا لینک کامل" },
+    { key: "bale", label: "بله", value: bale, setter: setBale, placeholder: "نام کاربری یا لینک کامل" },
+  ];
+
+  const selectedCount = allSocials.filter((s) => s.value.trim() !== "").length;
+  const isAtLimit = selectedCount >= socialLimit;
+
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   const businessUrl = `${siteUrl}/business/${slug}`;
 
@@ -64,6 +81,13 @@ export function SettingsClient({ business }: { business: Business }) {
   }, [businessUrl]);
 
   const handleSave = async () => {
+    if (selectedCount > socialLimit) {
+      toast.error(
+        `در پکیج ${planConfig.label}، فقط ${socialLimit} شبکه اجتماعی مجاز است.`
+      );
+      return;
+    }
+
     setLoading(true);
 
     const { error } = await supabase
@@ -230,97 +254,44 @@ export function SettingsClient({ business }: { business: Business }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>شبکه‌های اجتماعی</CardTitle>
+          <CardTitle>
+            شبکه‌های اجتماعی (انتخاب حداکثر {socialLimit} مورد از {allSocials.length})
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-xs text-navy/50 leading-relaxed">
-            می‌توانید نام کاربری (مثل <span dir="ltr">@username</span>) یا لینک
-            کامل را وارد کنید. فقط موارد پر شده در ویترین نمایش داده می‌شوند.
+            می‌توانید حداکثر {socialLimit} شبکه اجتماعی را پر کنید. بقیه فیلدها
+            غیرفعال می‌شوند. فقط موارد پر شده در ویترین نمایش داده می‌شوند.
           </p>
 
-          <div>
-            <label className="text-sm font-medium text-navy/70">
-              اینستاگرام
-            </label>
-            <input
-              type="text"
-              value={instagram}
-              onChange={(e) => setInstagram(e.target.value)}
-              placeholder="@username یا لینک کامل"
-              dir="ltr"
-              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left"
-            />
-          </div>
+          {allSocials.map((social) => {
+            const isDisabled = isAtLimit && social.value.trim() === "";
+            return (
+              <div key={social.key}>
+                <label className="text-sm font-medium text-navy/70">
+                  {social.label}
+                </label>
+                <input
+                  type="text"
+                  value={social.value}
+                  onChange={(e) => social.setter(e.target.value)}
+                  placeholder={social.placeholder}
+                  dir="ltr"
+                  disabled={isDisabled}
+                  className={`mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left ${
+                    isDisabled ? "bg-gray-100 cursor-not-allowed opacity-60" : ""
+                  }`}
+                />
+              </div>
+            );
+          })}
 
-          <div>
-            <label className="text-sm font-medium text-navy/70">
-              تلگرام
-            </label>
-            <input
-              type="text"
-              value={telegram}
-              onChange={(e) => setTelegram(e.target.value)}
-              placeholder="@username یا لینک کامل"
-              dir="ltr"
-              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-navy/70">
-              واتساپ
-            </label>
-            <input
-              type="text"
-              value={whatsapp}
-              onChange={(e) => setWhatsapp(e.target.value)}
-              placeholder="09123456789"
-              dir="ltr"
-              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-navy/70">
-              روبیکا
-            </label>
-            <input
-              type="text"
-              value={rubika}
-              onChange={(e) => setRubika(e.target.value)}
-              placeholder="نام کاربری یا لینک کامل"
-              dir="ltr"
-              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-navy/70">
-              ایتا
-            </label>
-            <input
-              type="text"
-              value={eitaa}
-              onChange={(e) => setEitaa(e.target.value)}
-              placeholder="نام کاربری یا لینک کامل"
-              dir="ltr"
-              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-navy/70">
-              بله
-            </label>
-            <input
-              type="text"
-              value={bale}
-              onChange={(e) => setBale(e.target.value)}
-              placeholder="نام کاربری یا لینک کامل"
-              dir="ltr"
-              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left"
-            />
-          </div>
+          {socialLimit < allSocials.length && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+              ⚠️ در پکیج {planConfig.label}، فقط {socialLimit} شبکه اجتماعی قابل
+              ویرایش است. برای افزودن شبکه‌های بیشتر، پکیج خود را ارتقا دهید.
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -7,6 +7,7 @@ import { BusinessHeader } from "@/components/business/BusinessHeader";
 import { CategoryTabs } from "@/components/business/CategoryTabs";
 import { ProductCard } from "@/components/business/ProductCard";
 import { FloatingCart } from "@/components/business/FloatingCart";
+import { getPlanConfig } from "@/lib/plans";
 
 interface Business {
   id: string;
@@ -69,6 +70,32 @@ export function BusinessClient({
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const planConfig = useMemo(() => getPlanConfig(business.plan), [business.plan]);
+  const socialLimit = planConfig.features.socialLinksLimit;
+
+  // ساخت لیست شبکه‌های پر شده
+  const filledSocials = useMemo(() => {
+    const list = [
+      { key: "instagram", value: business.instagram },
+      { key: "telegram", value: business.telegram },
+      { key: "whatsapp", value: business.whatsapp },
+      { key: "rubika", value: business.rubika },
+      { key: "eitaa", value: business.eitaa },
+      { key: "bale", value: business.bale },
+    ].filter((s) => s.value && s.value.trim() !== "");
+
+    return list.slice(0, socialLimit);
+  }, [business, socialLimit]);
+
+  const socialsToPass = {
+    instagram: filledSocials.find((s) => s.key === "instagram")?.value || undefined,
+    telegram: filledSocials.find((s) => s.key === "telegram")?.value || undefined,
+    whatsapp: filledSocials.find((s) => s.key === "whatsapp")?.value || undefined,
+    rubika: filledSocials.find((s) => s.key === "rubika")?.value || undefined,
+    eitaa: filledSocials.find((s) => s.key === "eitaa")?.value || undefined,
+    bale: filledSocials.find((s) => s.key === "bale")?.value || undefined,
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem(`linqma-cart-${business.slug}`);
@@ -184,12 +211,12 @@ export function BusinessClient({
         coverUrl={business.cover_url || undefined}
         logoUrl={business.logo_url || undefined}
         plan={business.plan}
-        instagram={business.instagram || undefined}
-        telegram={business.telegram || undefined}
-        whatsapp={business.whatsapp || undefined}
-        rubika={business.rubika || undefined}
-        eitaa={business.eitaa || undefined}
-        bale={business.bale || undefined}
+        instagram={socialsToPass.instagram}
+        telegram={socialsToPass.telegram}
+        whatsapp={socialsToPass.whatsapp}
+        rubika={socialsToPass.rubika}
+        eitaa={socialsToPass.eitaa}
+        bale={socialsToPass.bale}
       />
 
       <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-[#EDE8DF]">
