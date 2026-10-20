@@ -5,6 +5,7 @@ export type ResolvedBusiness = {
   name: string;
   slug: string;
   is_published: boolean;
+  plan: string;
 } | null;
 
 export async function resolveDashboardBusiness(
@@ -19,7 +20,6 @@ export async function resolveDashboardBusiness(
 
   const { business: businessParam } = await searchParams;
 
-  // ۱. حالت مدیر: اگر پارامتر business هست
   if (businessParam) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -32,7 +32,7 @@ export async function resolveDashboardBusiness(
     if (isAdmin) {
       const { data: targetBusiness } = await supabase
         .from("businesses")
-        .select("id, name, slug, is_published")
+        .select("id, name, slug, is_published, plan")
         .eq("id", businessParam)
         .maybeSingle();
 
@@ -42,10 +42,9 @@ export async function resolveDashboardBusiness(
     }
   }
 
-  // ۲. حالت عادی: کسب‌وکار خود کاربر
   const { data: ownBusiness } = await supabase
     .from("businesses")
-    .select("id, name, slug, is_published")
+    .select("id, name, slug, is_published, plan")
     .eq("owner_id", user.id)
     .order("created_at", { ascending: false })
     .limit(1)

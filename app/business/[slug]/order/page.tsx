@@ -11,9 +11,9 @@ import {
   Phone,
   FileText,
 } from "lucide-react";
-import QRCode from "qrcode";
 import { AddItemsModal } from "@/components/business/AddItemsModal";
 import { createClient } from "@/lib/supabase/client";
+import { BrandedQRCode } from "@/components/shared/BrandedQRCode";
 
 interface CartItem {
   id: string;
@@ -44,7 +44,6 @@ export default function OrderPage({
   const [slug, setSlug] = useState<string>("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orderCode, setOrderCode] = useState<string>("");
-  const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [showAddItems, setShowAddItems] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [businessId, setBusinessId] = useState<string>("");
@@ -172,22 +171,15 @@ export default function OrderPage({
   );
 
   const generateCode = () => {
-    // ۲ حرف + ۴ عدد (برای خواندن و تایپ راحت)
-    const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // بدون I و O
+    const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
     const digits = "0123456789";
-
     let code = "";
-
-    // ۲ حرف
     for (let i = 0; i < 2; i++) {
       code += letters.charAt(Math.floor(Math.random() * letters.length));
     }
-
-    // ۴ عدد
     for (let i = 0; i < 4; i++) {
       code += digits.charAt(Math.floor(Math.random() * digits.length));
     }
-
     return code;
   };
 
@@ -199,11 +191,10 @@ export default function OrderPage({
     let inserted = false;
     let lastError: unknown = null;
 
-    // تلاش تا ۵ بار برای جلوگیری از تداخل short_code
     for (let attempt = 0; attempt < 5; attempt++) {
       code = generateCode();
 
-      const { error } = await supabase.from("orders").insert({
+      const payload = {
         business_id: businessId,
         short_code: code,
         items: cart,
@@ -213,14 +204,15 @@ export default function OrderPage({
         customer_phone: customerPhone.trim() || null,
         customer_note: customerNote.trim() || null,
         table_number: tableNumber.trim() || null,
-      });
+      };
+
+      const { error } = await supabase.from("orders").insert(payload);
 
       if (!error) {
         inserted = true;
         break;
       }
 
-      // اگر خطا مربوط به unique بود، دوباره تلاش کن
       if (error.code !== "23505") {
         lastError = error;
         break;
@@ -234,17 +226,10 @@ export default function OrderPage({
     }
 
     setOrderCode(code);
-
-    const text = `LINQMA|${code}|${slug}|${totalPrice}`;
-    const dataUrl = await QRCode.toDataURL(text, {
-      width: 260,
-      margin: 1,
-      color: { dark: "#0F172A", light: "#FFFFFF" },
-    });
-    setQrDataUrl(dataUrl);
   };
 
   if (orderCode) {
+    const qrValue = `LINQMA|${orderCode}|${slug}|${totalPrice}`;
     return (
       <div
         className="min-h-screen bg-[#FAF7F2] font-[Vazirmatn] flex items-center justify-center p-4"
@@ -255,27 +240,22 @@ export default function OrderPage({
             <div className="w-14 h-14 rounded-full bg-[#D4AF37]/15 flex items-center justify-center mx-auto mb-3">
               <Check className="w-7 h-7 text-[#D4AF37]" strokeWidth={3} />
             </div>
-
             <h1 className="text-lg font-bold text-[#0F172A]">
               سفارش شما ثبت شد
             </h1>
-
             <p className="text-xs text-[#64748B] mt-1">
               این صفحه را به صندوق نشان دهید
             </p>
           </div>
-
           <div className="mt-6 flex flex-col items-center">
-            {qrDataUrl && (
-              <div className="bg-white rounded-3xl p-3 border border-[#EDE8DF] shadow-sm">
-                <img
-                  src={qrDataUrl}
-                  alt="QR سفارش"
-                  className="w-52 h-52 rounded-2xl"
-                />
-              </div>
-            )}
-
+            <div className="bg-white rounded-3xl p-3 border border-[#EDE8DF] shadow-sm">
+              <BrandedQRCode
+                value={qrValue}
+                logoSrc="/brand/lqm-qr-logo.png"
+                size={208}
+                className="w-52 h-52 rounded-2xl"
+              />
+            </div>
             <div className="mt-4 flex items-center gap-2">
               <span className="text-xs text-[#64748B]">کد سفارش:</span>
               <span className="font-black text-2xl tracking-[0.2em] text-[#0F172A]">
@@ -283,7 +263,6 @@ export default function OrderPage({
               </span>
             </div>
           </div>
-
           <div className="mt-6 bg-[#FAF7F2] rounded-2xl p-4 space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-[#64748B]">تعداد اقلام</span>
@@ -297,19 +276,16 @@ export default function OrderPage({
               </span>
             </div>
           </div>
-
           <div className="mt-6 space-y-2">
             <button
               type="button"
               onClick={() => {
                 setOrderCode("");
-                setQrDataUrl("");
               }}
               className="w-full h-12 rounded-2xl bg-[#D4AF37] text-white font-bold cursor-pointer hover:bg-[#C4A034] transition"
             >
               ویرایش سفارش
             </button>
-
             <button
               type="button"
               onClick={() => {
@@ -395,7 +371,6 @@ export default function OrderPage({
                   </div>
                 )}
               </div>
-
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-sm text-[#0F172A] truncate">
                   {item.name}
@@ -420,7 +395,6 @@ export default function OrderPage({
                   </button>
                 </div>
               </div>
-
               <div className="text-left shrink-0">
                 <p className="font-black text-sm text-[#0F172A]">
                   {(item.price * item.quantity).toLocaleString("fa-IR")}
@@ -444,7 +418,6 @@ export default function OrderPage({
           <h3 className="font-bold text-sm text-[#0F172A] mb-3">
             اطلاعات سفارش‌دهنده
           </h3>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-[#64748B] flex items-center gap-1.5 mb-1.5">
@@ -459,7 +432,6 @@ export default function OrderPage({
                 className="w-full h-10 px-3 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-[#D4AF37]"
               />
             </div>
-
             <div>
               <label className="text-xs font-medium text-[#64748B] flex items-center gap-1.5 mb-1.5">
                 <Phone className="w-3.5 h-3.5" />
@@ -477,7 +449,6 @@ export default function OrderPage({
                 className="w-full h-10 px-3 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-[#D4AF37] text-left"
               />
             </div>
-
             <div>
               <label className="text-xs font-medium text-[#64748B] flex items-center gap-1.5 mb-1.5">
                 <FileText className="w-3.5 h-3.5" />
@@ -491,7 +462,6 @@ export default function OrderPage({
                 className="w-full h-10 px-3 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-[#D4AF37]"
               />
             </div>
-
             <div>
               <label className="text-xs font-medium text-[#64748B] mb-1.5 block">
                 شماره میز (اختیاری)
@@ -522,7 +492,6 @@ export default function OrderPage({
               <span className="text-xs text-[#8B7355]">تومان</span>
             </div>
           </div>
-
           <button
             type="button"
             onClick={submitOrder}

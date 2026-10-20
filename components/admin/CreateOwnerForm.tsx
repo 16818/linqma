@@ -13,6 +13,7 @@ export function CreateOwnerForm() {
   const [password, setPassword] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [businessSlug, setBusinessSlug] = useState("");
+  const [plan, setPlan] = useState("basic");
   const [loading, setLoading] = useState(false);
 
   const [createdSecret, setCreatedSecret] = useState<{
@@ -20,6 +21,8 @@ export function CreateOwnerForm() {
     password: string;
     slug?: string;
     businessName?: string;
+    plan?: string;
+    logoUrl?: string | null;
   } | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
@@ -33,6 +36,7 @@ export function CreateOwnerForm() {
       password: password || undefined,
       businessName: businessName || undefined,
       businessSlug: businessSlug || undefined,
+      plan: plan,
     });
 
     setLoading(false);
@@ -47,6 +51,8 @@ export function CreateOwnerForm() {
       password: result.password,
       slug: result.slug,
       businessName: businessName || undefined,
+      plan: result.plan,
+      logoUrl: result.logoUrl,
     });
 
     toast.success(
@@ -61,6 +67,7 @@ export function CreateOwnerForm() {
     setPassword("");
     setBusinessName("");
     setBusinessSlug("");
+    setPlan("basic");
   }
 
   function closeAndReset() {
@@ -116,6 +123,8 @@ export function CreateOwnerForm() {
                   password={createdSecret.password}
                   slug={createdSecret.slug}
                   businessName={createdSecret.businessName}
+                  plan={createdSecret.plan}
+                  logoUrl={createdSecret.logoUrl}
                 />
                 <div className="mt-5 print:hidden">
                   <button
@@ -220,6 +229,21 @@ export function CreateOwnerForm() {
                           className="flex-1 h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:border-[#D4AF37] text-left"
                         />
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-[#0F172A]/70">
+                        پکیج (پلن)
+                      </label>
+                      <select
+                        value={plan}
+                        onChange={(e) => setPlan(e.target.value)}
+                        className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:border-[#D4AF37] bg-white"
+                      >
+                        <option value="basic">ویترین (پایه)</option>
+                        <option value="pro">عملیات (حرفه‌ای)</option>
+                        <option value="premium">برند (ویژه)</option>
+                      </select>
                     </div>
                   </div>
                 </div>

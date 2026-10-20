@@ -1,252 +1,299 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import { ImageUpload } from "@/components/ImageUpload";
-import { X } from "lucide-react";
+import { toast } from "sonner";
+import { X, Upload } from "lucide-react";
+import { getProductLimit, getPlanLabel } from "@/lib/plans";
 
 interface Category {
   id: string;
   name: string;
 }
 
-interface ProductFormProps {
-  businessId: string;
-  categories: Category[];
-  initialData?: {
-    id: string;
-    name: string;
-    description?: string;
-    price: number;
-    discount_price?: number | null;
-    image_url?: string | null;
-    category_id?: string | null;
-    badge?: string | null;
-    ingredients?: string[] | null;
-    is_active: boolean;
-  } | null;
-  onClose: () => void;
-  onSuccess: () => void;
+interface Product {
+  id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  discount_price?: number | null;
+  image_url?: string | null;
+  is_active: boolean;
+  is_available?: boolean;
+  is_featured_today?: boolean;
+  badge?: string | null;
+  category_id?: string | null;
 }
 
 export function ProductForm({
   businessId,
   categories,
   initialData,
+  plan,
+  productCount,
   onClose,
   onSuccess,
-}: ProductFormProps) {
-  const isEdit = !!initialData;
+}: {
+  businessId: string;
+  categories: Category[];
+  initialData?: Product | null;
+  plan: string;
+  productCount: number;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
   const supabase = createClient();
+  const isEdit = Boolean(initialData?.id);
+  const limit = getProductLimit(plan);
+  const planLabel = getPlanLabel(plan);
 
   const [name, setName] = useState(initialData?.name || "");
-  const [description, setDescription] = useState(initialData?.description || "");
-  const [price, setPrice] = useState(initialData?.price?.toString() || "");
+  const [description, setDescription] = useState(
+    initialData?.description || ""
+  );
+  const [price, setPrice] = useState(
+    initialData?.price ? String(initialData.price) : ""
+  );
   const [discountPrice, setDiscountPrice] = useState(
-    initialData?.discount_price?.toString() || ""
+    initialData?.discount_price ? String(initialData.discount_price) : ""
   );
-  const [imageUrl, setImageUrl] = useState<string | null>(
-    initialData?.image_url || null
+  const [categoryId, setCategoryId] = useState(
+    initialData?.category_id || ""
   );
-  const [categoryId, setCategoryId] = useState(initialData?.category_id || "");
+  const [imageUrl, setImageUrl] = useState(initialData?.image_url || "");
   const [badge, setBadge] = useState(initialData?.badge || "");
-  const [ingredients, setIngredients] = useState(
-    initialData?.ingredients?.join(", ") || ""
+  const [isAvailable, setIsAvailable] = useState(
+    initialData?.is_available ?? true
   );
   const [isActive, setIsActive] = useState(initialData?.is_active ?? true);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [isFeaturedToday, setIsFeaturedToday] = useState(
+    initialData?.is_featured_today ?? false
+  );
 
-  const discountPercent = useMemo(() => {
-    const p = parseInt(price);
-    const d = parseInt(discountPrice);
-    if (!p || !d || d >= p || d <= 0) return null;
-    return Math.round(((p - d) / p) * 100);
-  }, [price, discountPrice]);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${businessId}/${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("product-images")
+      .upload(fileName, file);
+
+    if (uploadError) {
+      toast.error("خطا در آپلود عکس");
+      setUploading(false);
+      return;
+    }
+
+    const { data } = supabase.storage
+      .from("product-images")
+      .getPublicUrl(fileName);
+
+    setImageUrl(data.publicUrl);
+    setUploading(false);
+    toast.success("عکس آپلود شد");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
+    setSaving(true);
 
-    const p = parseInt(price);
-    const d = parseInt(discountPrice);
+    // بررسی سقف محصول فقط برای ساخت جدید (نه ویرایش)
+    if (!isEdit) {
+      const { count, error: countError } = await supabase
+        .from("products")
+        .select("*", { count: "exact", head: true })
+        .eq("business_id", businessId);
 
-    if (isNaN(p) || p <= 0) {
-      setError("قیمت اصلی باید بزرگ‌تر از صفر باشد");
-      setLoading(false);
-      return;
+      if (countError) {
+        toast.error("خطا در بررسی سقف پکیج");
+        setSaving(false);
+        return;
+      }
+
+      if ((count ?? 0) >= limit) {
+        toast.error(
+          `سقف پکیج ${planLabel}: حداکثر ${limit} محصول. برای افزودن بیشتر ارتقا دهید.`
+        );
+        setSaving(false);
+        return;
+      }
     }
-
-    if (discountPrice && (isNaN(d) || d <= 0)) {
-      setError("قیمت تخفیف باید بزرگ‌تر از صفر باشد");
-      setLoading(false);
-      return;
-    }
-
-    if (discountPrice && d >= p) {
-      setError("قیمت تخفیف باید کمتر از قیمت اصلی باشد");
-      setLoading(false);
-      return;
-    }
-
-    const ingredientsArray = ingredients
-      .split(",")
-      .map((i) => i.trim())
-      .filter(Boolean);
 
     const payload = {
       business_id: businessId,
-      name,
-      description: description || null,
-      price: p,
-      discount_price: discountPrice && !isNaN(d) ? d : null,
-      image_url: imageUrl,
+      name: name.trim(),
+      description: description.trim() || null,
+      price: Number(price),
+      discount_price: discountPrice ? Number(discountPrice) : null,
       category_id: categoryId || null,
+      image_url: imageUrl || null,
       badge: badge || null,
-      ingredients: ingredientsArray.length > 0 ? ingredientsArray : null,
+      is_available: isAvailable,
       is_active: isActive,
+      is_featured_today: isFeaturedToday,
     };
 
-    let result;
-    if (isEdit && initialData) {
-      result = await supabase
+    if (isEdit && initialData?.id) {
+      const { error } = await supabase
         .from("products")
         .update(payload)
         .eq("id", initialData.id);
+
+      if (error) {
+        toast.error("خطا در ذخیره محصول");
+        setSaving(false);
+        return;
+      }
     } else {
-      result = await supabase.from("products").insert(payload);
+      const { error } = await supabase.from("products").insert(payload);
+
+      if (error) {
+        toast.error("خطا در ذخیره محصول");
+        setSaving(false);
+        return;
+      }
     }
 
-    if (result.error) {
-      setError(result.error.message);
-      setLoading(false);
-      return;
-    }
-
+    setSaving(false);
+    toast.success(isEdit ? "محصول ویرایش شد" : "محصول اضافه شد");
     onSuccess();
-    onClose();
-  };
-
-  const filterNumeric = (value: string) => {
-    return value.replace(/\D/g, "");
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-[#EDE8DF] px-5 py-4 flex items-center justify-between rounded-t-3xl">
-          <h2 className="text-lg font-bold text-navy">
-            {isEdit ? "ویرایش محصول" : "افزودن محصول"}
-          </h2>
-          <button onClick={onClose} className="p-1 cursor-pointer">
-            <X className="w-5 h-5 text-navy/50" />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      dir="rtl"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white border-b border-[#EDE8DF] p-4 flex items-center justify-between">
+          <h3 className="font-bold text-navy">
+            {isEdit ? "ویرایش محصول" : "افزودن محصول جدید"}
+          </h3>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-xl bg-[#FAF7F2] flex items-center justify-center hover:bg-[#EFE9DF]"
+          >
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-5">
-          <ImageUpload value={imageUrl} onChange={setImageUrl} />
-
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {/* عکس */}
           <div>
-            <label className="text-sm font-medium text-navy/70">
-              نام محصول *
-            </label>
+            <label className="text-sm font-medium text-navy/70">عکس محصول</label>
+            <div className="mt-1.5 flex items-center gap-3">
+              {imageUrl && (
+                <img
+                  src={imageUrl}
+                  alt="پیش‌نمایش"
+                  className="w-16 h-16 rounded-xl object-cover"
+                />
+              )}
+              <label className="cursor-pointer h-11 px-4 rounded-xl bg-[#FAF7F2] text-navy font-medium text-sm flex items-center gap-2 hover:bg-[#EFE9DF]">
+                <Upload className="w-4 h-4" />
+                {uploading ? "در حال آپلود..." : "انتخاب عکس"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* نام */}
+          <div>
+            <label className="text-sm font-medium text-navy/70">نام محصول</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50"
+              className="mt-1.5 w-full h-11 px-4 rounded-xl border border-[#EDE8DF] focus:outline-none focus:border-gold"
             />
           </div>
 
+          {/* توضیحات */}
           <div>
             <label className="text-sm font-medium text-navy/70">توضیحات</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
-              className="mt-1.5 w-full px-4 py-3 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 resize-none"
+              className="mt-1.5 w-full px-4 py-3 rounded-xl border border-[#EDE8DF] focus:outline-none focus:border-gold resize-none"
             />
           </div>
 
+          {/* قیمت‌ها */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-medium text-navy/70">
+                قیمت (تومان)
+              </label>
+              <input
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                required
+                min="0"
+                className="mt-1.5 w-full h-11 px-4 rounded-xl border border-[#EDE8DF] focus:outline-none focus:border-gold"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-navy/70">
+                قیمت با تخفیف
+              </label>
+              <input
+                type="number"
+                value={discountPrice}
+                onChange={(e) => setDiscountPrice(e.target.value)}
+                min="0"
+                placeholder="اختیاری"
+                className="mt-1.5 w-full h-11 px-4 rounded-xl border border-[#EDE8DF] focus:outline-none focus:border-gold"
+              />
+            </div>
+          </div>
+
+          {/* دسته‌بندی */}
           <div>
             <label className="text-sm font-medium text-navy/70">
-              قیمت اصلی (تومان) *
+              دسته‌بندی
             </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={price}
-              onChange={(e) => setPrice(filterNumeric(e.target.value))}
-              required
-              dir="ltr"
-              placeholder="مثلاً 130000"
-              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-navy/70">
-              قیمت با تخفیف (اختیاری)
-            </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={discountPrice}
-              onChange={(e) =>
-                setDiscountPrice(filterNumeric(e.target.value))
-              }
-              dir="ltr"
-              placeholder="اگر تخفیف ندارد خالی بگذارید"
-              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left"
-            />
-
-            {discountPercent && (
-              <div className="mt-2 flex items-center gap-2 bg-[#FEF3C7] border border-[#FCD34D] rounded-xl px-3 py-2 flex-wrap">
-                <span className="text-[#92400E] text-xs font-bold">
-                  ٪{discountPercent} تخفیف
-                </span>
-                <span className="text-[#92400E] text-xs">
-                  قیمت اصلی: {parseInt(price).toLocaleString("fa-IR")} تومان
-                </span>
-                <span className="text-[#92400E] text-xs font-bold">
-                  قیمت نهایی: {parseInt(discountPrice).toLocaleString("fa-IR")}{" "}
-                  تومان
-                </span>
-              </div>
-            )}
-
-            {discountPrice && !discountPercent && (
-              <p className="mt-2 text-xs text-amber-600">
-                قیمت تخفیف باید کمتر از قیمت اصلی باشد
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-navy/70">دسته‌بندی</label>
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
-              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 bg-white"
+              className="mt-1.5 w-full h-11 px-4 rounded-xl border border-[#EDE8DF] focus:outline-none focus:border-gold bg-white"
             >
               <option value="">بدون دسته</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
                 </option>
               ))}
             </select>
           </div>
 
+          {/* نشان */}
           <div>
             <label className="text-sm font-medium text-navy/70">نشان</label>
             <select
               value={badge}
               onChange={(e) => setBadge(e.target.value)}
-              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 bg-white"
+              className="mt-1.5 w-full h-11 px-4 rounded-xl border border-[#EDE8DF] focus:outline-none focus:border-gold bg-white"
             >
               <option value="">بدون نشان</option>
               <option value="ویژه">ویژه</option>
@@ -255,58 +302,51 @@ export function ProductForm({
             </select>
           </div>
 
-          <div>
-            <label className="text-sm font-medium text-navy/70">
-              مواد اولیه (با کاما جدا کنید)
-            </label>
-            <input
-              type="text"
-              value={ingredients}
-              onChange={(e) => setIngredients(e.target.value)}
-              placeholder="شیر، اسپرسو، وانیل"
-              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50"
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-navy">فعال</span>
-            <button
-              type="button"
-              onClick={() => setIsActive(!isActive)}
-              className={`w-12 h-7 rounded-full transition-colors cursor-pointer ${
-                isActive ? "bg-gold" : "bg-navy/20"
-              }`}
-            >
-              <div
-                className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                  isActive ? "translate-x-1" : "translate-x-6"
-                }`}
+          {/* وضعیت‌ها */}
+          <div className="flex flex-wrap gap-4 pt-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+                className="w-4 h-4"
               />
-            </button>
+              <span className="text-sm text-navy">فعال</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isAvailable}
+                onChange={(e) => setIsAvailable(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <span className="text-sm text-navy">موجود</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isFeaturedToday}
+                onChange={(e) => setIsFeaturedToday(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <span className="text-sm text-navy">⭐ پیشنهاد امروز</span>
+            </label>
           </div>
 
-          {error && (
-            <p className="text-sm text-red-500 text-center">{error}</p>
+          {!isEdit && productCount >= limit && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+              ⚠️ به سقف پکیج {planLabel} رسیده‌اید ({limit} محصول). برای افزودن
+              بیشتر، پکیج خود را ارتقا دهید.
+            </div>
           )}
 
-          <div className="flex gap-3 pt-2">
-            <Button
-              type="button"
-              variant="secondary"
-              className="flex-1"
-              onClick={onClose}
-            >
-              انصراف
-            </Button>
-            <Button
-              type="submit"
-              variant="gold"
-              className="flex-1"
-              disabled={loading}
-            >
-              {loading ? "در حال ذخیره..." : isEdit ? "ذخیره" : "افزودن"}
-            </Button>
-          </div>
+          <button
+            type="submit"
+            disabled={saving || uploading || (!isEdit && productCount >= limit)}
+            className="w-full h-12 rounded-2xl bg-gold text-white font-bold cursor-pointer hover:bg-gold-dark transition disabled:opacity-60"
+          >
+            {saving ? "در حال ذخیره..." : isEdit ? "ذخیره تغییرات" : "افزودن محصول"}
+          </button>
         </form>
       </div>
     </div>

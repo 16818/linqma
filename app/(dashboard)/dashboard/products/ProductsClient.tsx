@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { ProductForm } from "@/components/dashboard/ProductForm";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/ui/empty-state";
+import { getProductLimit, getPlanLabel } from "@/lib/plans";
 
 interface Product {
   id: string;
@@ -36,20 +37,35 @@ export function ProductsClient({
   initialProducts,
   categories,
   businessId,
+  plan,
+  initialProductCount,
 }: {
   initialProducts: Product[];
   categories: Category[];
   businessId: string;
+  plan: string;
+  initialProductCount: number;
 }) {
   const [products, setProducts] = useState(initialProducts);
+  const [productCount, setProductCount] = useState(initialProductCount);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
+  const limit = useMemo(() => getProductLimit(plan), [plan]);
+  const atLimit = productCount >= limit;
+  const planLabel = getPlanLabel(plan);
+
   const refresh = () => {
     router.refresh();
     toast.success("محصول ذخیره شد");
+    setProductCount((c) => c + 1);
+  };
+
+  const handleDelete = () => {
+    setProductCount((c) => Math.max(0, c - 1));
+    router.refresh();
   };
 
   const toggleActive = async (id: string, current: boolean) => {
@@ -121,20 +137,22 @@ export function ProductsClient({
 
     setProducts((prev) => prev.filter((p) => p.id !== id));
     toast.success("محصول حذف شد");
+    handleDelete();
   };
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-navy">محصولات</h1>
           <p className="text-navy/60 text-sm mt-1">
-            {products.length} محصول ثبت شده
+            {productCount} از {limit} محصول (پکیج {planLabel})
           </p>
         </div>
         <Button
           variant="gold"
           className="gap-2"
+          disabled={atLimit}
           onClick={() => {
             setEditingProduct(null);
             setShowForm(true);
@@ -144,6 +162,13 @@ export function ProductsClient({
           افزودن محصول
         </Button>
       </div>
+
+      {atLimit && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
+          ⚠️ به سقف پکیج {planLabel} رسیده‌اید ({limit} محصول). برای افزودن
+          محصولات بیشتر، پکیج خود را ارتقا دهید.
+        </div>
+      )}
 
       <div className="space-y-3">
         {products.length === 0 ? (
@@ -293,11 +318,13 @@ export function ProductsClient({
         )}
       </div>
 
-      {showForm && (
+      {showForm && !atLimit && (
         <ProductForm
           businessId={businessId}
           categories={categories}
           initialData={editingProduct}
+          plan={plan}
+          productCount={productCount}
           onClose={() => {
             setShowForm(false);
             setEditingProduct(null);

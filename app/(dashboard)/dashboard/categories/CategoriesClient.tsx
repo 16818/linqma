@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Pencil, Trash2 } from "lucide-react";
@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
+import { getPlanConfig } from "@/lib/plans";
 
 interface Category {
   id: string;
@@ -38,11 +39,16 @@ type GroupKey = keyof typeof EMOJI_GROUPS;
 export function CategoriesClient({
   initialCategories,
   businessId,
+  plan,
+  initialCategoryCount,
 }: {
   initialCategories: Category[];
   businessId: string;
+  plan: string;
+  initialCategoryCount: number;
 }) {
   const [categories, setCategories] = useState(initialCategories);
+  const [categoryCount, setCategoryCount] = useState(initialCategoryCount);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
   const [name, setName] = useState("");
@@ -52,7 +58,13 @@ export function CategoriesClient({
   const router = useRouter();
   const supabase = createClient();
 
+  const planConfig = useMemo(() => getPlanConfig(plan), [plan]);
+  const limit = planConfig.categoryLimit;
+  const atLimit = categoryCount >= limit;
+  const planLabel = planConfig.label;
+
   const openAdd = () => {
+    if (atLimit) return;
     setEditing(null);
     setName("");
     setIcon("");
@@ -91,6 +103,26 @@ export function CategoriesClient({
       );
       toast.success("دسته‌بندی ویرایش شد");
     } else {
+      // بررسی سقف دسته‌بندی در سرور
+      const { count, error: countError } = await supabase
+        .from("categories")
+        .select("*", { count: "exact", head: true })
+        .eq("business_id", businessId);
+
+      if (countError) {
+        toast.error("خطا در بررسی سقف پکیج");
+        setLoading(false);
+        return;
+      }
+
+      if ((count ?? 0) >= limit) {
+        toast.error(
+          `سقف پکیج ${planLabel}: حداکثر ${limit} دسته‌بندی. برای افزودن بیشتر ارتقا دهید.`
+        );
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("categories")
         .insert({
@@ -108,6 +140,7 @@ export function CategoriesClient({
       }
 
       setCategories((prev) => [...prev, data]);
+      setCategoryCount((c) => c + 1);
       toast.success("دسته‌بندی اضافه شد");
     }
 
@@ -127,25 +160,39 @@ export function CategoriesClient({
     }
 
     setCategories((prev) => prev.filter((c) => c.id !== id));
+    setCategoryCount((c) => Math.max(0, c - 1));
     toast.success("دسته‌بندی حذف شد");
+    router.refresh();
   };
 
   const groupKeys = Object.keys(EMOJI_GROUPS) as GroupKey[];
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-navy">دسته بندی ها</h1>
           <p className="text-navy/60 text-sm mt-1">
-            {categories.length} دسته بندی
+            {categoryCount} از {limit} دسته‌بندی (پکیج {planLabel})
           </p>
         </div>
-        <Button variant="gold" className="gap-2" onClick={openAdd}>
+        <Button
+          variant="gold"
+          className="gap-2"
+          onClick={openAdd}
+          disabled={atLimit}
+        >
           <Plus className="w-5 h-5" />
           افزودن
         </Button>
       </div>
+
+      {atLimit && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
+          ⚠️ به سقف پکیج {planLabel} رسیده‌اید ({limit} دسته‌بندی). برای افزودن
+          بیشتر، پکیج خود را ارتقا دهید.
+        </div>
+      )}
 
       <div className="space-y-3">
         {categories.length === 0 ? (
@@ -186,7 +233,7 @@ export function CategoriesClient({
         )}
       </div>
 
-      {showForm && (
+      {showForm && !atLimit && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-[#EDE8DF] px-5 py-4 rounded-t-3xl sm:rounded-t-3xl">
@@ -214,7 +261,6 @@ export function CategoriesClient({
                   آیکون (اختیاری)
                 </label>
 
-                {/* پیش‌نمایش انتخاب */}
                 <div className="mt-1.5 flex items-center gap-2">
                   <input
                     type="text"
@@ -235,7 +281,6 @@ export function CategoriesClient({
                   )}
                 </div>
 
-                {/* انتخاب نوع */}
                 <div className="mt-3">
                   <p className="text-xs text-navy/50 mb-2">
                     انتخاب از میان پیشنهادها:
@@ -258,7 +303,6 @@ export function CategoriesClient({
                     ))}
                   </div>
 
-                  {/* گرید ایموجی‌ها */}
                   <div className="grid grid-cols-8 gap-1 bg-[#FAF7F2] border border-[#EDE8DF] rounded-2xl p-2">
                     {EMOJI_GROUPS[activeGroup].map((emoji, idx) => (
                       <button
@@ -279,6 +323,13 @@ export function CategoriesClient({
                 </div>
               </div>
 
+              {!editing && categoryCount >= limit && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+                  ⚠️ به سقف پکیج {planLabel} رسیده‌اید ({limit} دسته‌بندی). برای
+                  افزودن بیشتر، پکیج خود را ارتقا دهید.
+                </div>
+              )}
+
               <div className="flex gap-3 pt-2">
                 <Button
                   type="button"
@@ -292,7 +343,7 @@ export function CategoriesClient({
                   type="submit"
                   variant="gold"
                   className="flex-1"
-                  disabled={loading}
+                  disabled={loading || (!editing && categoryCount >= limit)}
                 >
                   {loading ? "..." : editing ? "ذخیره" : "افزودن"}
                 </Button>

@@ -12,6 +12,8 @@ export type CreateUserResult =
       password: string;
       businessId?: string;
       slug?: string;
+      plan?: string;
+      logoUrl?: string | null;
     }
   | { ok: false; error: string };
 
@@ -42,6 +44,7 @@ export async function createOwnerUser(input: {
   password?: string;
   businessName?: string;
   businessSlug?: string;
+  plan?: string;
 }): Promise<CreateUserResult> {
   const gate = await requireAdmin();
   if (!gate.ok || !gate.user) {
@@ -87,11 +90,14 @@ export async function createOwnerUser(input: {
 
   let businessId: string | undefined;
   let savedSlug: string | undefined;
+  let savedPlan: string | undefined;
+  let savedLogoUrl: string | null | undefined;
 
   const businessName = input.businessName?.trim();
   const businessSlug = input.businessSlug
     ? normalizeSlug(input.businessSlug)
     : undefined;
+  const plan = input.plan?.trim() || "basic";
 
   if (businessName && businessSlug) {
     const { data: biz, error: bizError } = await admin
@@ -101,9 +107,9 @@ export async function createOwnerUser(input: {
         name: businessName,
         slug: businessSlug,
         is_published: false,
-        plan: "basic",
+        plan: plan,
       })
-      .select("id, slug")
+      .select("id, slug, plan, logo_url")
       .single();
 
     if (bizError) {
@@ -119,8 +125,19 @@ export async function createOwnerUser(input: {
     }
     businessId = biz.id;
     savedSlug = biz.slug;
+    savedPlan = biz.plan;
+    savedLogoUrl = biz.logo_url;
   }
 
   revalidatePath("/admin");
-  return { ok: true, userId, email, password, businessId, slug: savedSlug };
+  return {
+    ok: true,
+    userId,
+    email,
+    password,
+    businessId,
+    slug: savedSlug,
+    plan: savedPlan,
+    logoUrl: savedLogoUrl,
+  };
 }

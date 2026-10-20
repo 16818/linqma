@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Copy, Check, Printer, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
-import QRCode from "qrcode";
+import { BrandedQRCode } from "@/components/shared/BrandedQRCode";
 
 interface DeliveryPackProps {
   email: string;
@@ -11,6 +11,8 @@ interface DeliveryPackProps {
   slug?: string;
   businessName?: string;
   siteUrl?: string;
+  plan?: string;
+  logoUrl?: string | null;
 }
 
 export function DeliveryPack({
@@ -19,28 +21,17 @@ export function DeliveryPack({
   slug,
   businessName,
   siteUrl,
+  plan,
+  logoUrl,
 }: DeliveryPackProps) {
-  const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [copiedAll, setCopiedAll] = useState(false);
 
   const site = siteUrl || (typeof window !== "undefined" ? window.location.origin : "");
   const storefrontUrl = slug ? `${site}/business/${slug}` : "";
   const loginUrl = `${site}/login`;
 
-  useEffect(() => {
-    if (storefrontUrl) {
-      QRCode.toDataURL(storefrontUrl, {
-        margin: 1,
-        width: 256,
-        color: {
-          dark: "#0F172A",
-          light: "#FFFFFF",
-        },
-      })
-        .then((url) => setQrDataUrl(url))
-        .catch((err) => console.error("QR Error", err));
-    }
-  }, [storefrontUrl]);
+  const qrLogoSrc =
+    plan === "premium" && logoUrl ? logoUrl : "/brand/lqm-qr-logo.png";
 
   const copyText = (text: string, label?: string) => {
     navigator.clipboard.writeText(text);
@@ -83,11 +74,14 @@ export function DeliveryPack({
         {/* ویترین و QR */}
         {slug && (
           <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-[#FAF7F2] rounded-2xl print:bg-white print:border print:border-gray-200">
-            {qrDataUrl && (
-              <div className="bg-white p-2 rounded-xl border border-[#EDE8DF] shrink-0">
-                <img src={qrDataUrl} alt="QR Code" className="w-24 h-24" />
-              </div>
-            )}
+            <div className="bg-white p-2 rounded-xl border border-[#EDE8DF] shrink-0">
+              <BrandedQRCode
+                value={storefrontUrl}
+                logoSrc={qrLogoSrc}
+                size={110}
+                className="w-24 h-24"
+              />
+            </div>
             <div className="flex-1 min-w-0 text-center sm:text-right">
               <p className="text-xs font-bold text-[#64748B] mb-1">لینک ویترین</p>
               <p className="font-mono text-sm text-[#0F172A] break-all mb-2" dir="ltr">
