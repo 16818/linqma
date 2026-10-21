@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { Plus, Minus } from "lucide-react";
 
 interface ProductCardProps {
   id: string;
@@ -9,14 +9,13 @@ interface ProductCardProps {
   price: number;
   discountPrice?: number | null;
   imageUrl?: string;
-  badge?: "ویژه" | "محبوب" | "جدید" | string | null;
-  ingredients?: string[];
+  badge?: "ویژه" | "محبوب" | "جدید" | null;
   isAvailable?: boolean;
   isFeaturedToday?: boolean;
-  quantity?: number;
-  onAdd?: (id: string) => void;
-  onRemove?: (id: string) => void;
-  className?: string;
+  quantity: number;
+  onAdd: (id: string) => void;
+  onRemove: (id: string) => void;
+  showAddButton?: boolean; // <--- پراپ جدید
 }
 
 export function ProductCard({
@@ -29,165 +28,108 @@ export function ProductCard({
   badge,
   isAvailable = true,
   isFeaturedToday = false,
-  quantity = 0,
+  quantity,
   onAdd,
   onRemove,
-  className,
+  showAddButton = true, // <--- پیش‌فرض true
 }: ProductCardProps) {
-  const inCart = quantity > 0;
-  const hasDiscount =
-    discountPrice != null && discountPrice > 0 && discountPrice < price;
-  const discountPercent = hasDiscount
-    ? Math.round(((price - discountPrice!) / price) * 100)
-    : 0;
+  const hasDiscount = discountPrice != null && discountPrice > 0 && discountPrice < price;
+  const finalPrice = hasDiscount ? discountPrice : price;
 
   return (
-    <div
-      className={cn(
-        "group bg-white rounded-3xl overflow-hidden relative",
-        "shadow-[0_4px_20px_-4px_rgba(0,0,0,0.06)]",
-        "transition-all duration-300 hover:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.12)] hover:-translate-y-0.5",
-        isFeaturedToday
-          ? "border-2 border-[#D4AF37]"
-          : "border border-[#EDE8DF]",
-        !isAvailable && "opacity-75",
-        className
-      )}
-    >
-      <div className="relative aspect-[4/3] bg-[#F5F0E8] overflow-hidden">
+    <div className="bg-white rounded-2xl border border-[#EDE8DF] overflow-hidden flex flex-col">
+      <div className="relative aspect-square bg-[#F5F0E8]">
         {imageUrl ? (
           <img
             src={imageUrl}
             alt={name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-sm text-[#8B7355]/40">
-            بدون تصویر
+          <div className="w-full h-full flex items-center justify-center text-[#8B7355]/30 text-sm">
+            بدون عکس
           </div>
         )}
 
-        {badge && !isFeaturedToday && (
-          <span
-            className={cn(
-              "absolute top-2.5 right-2.5 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm",
-              badge === "محبوب"
-                ? "bg-[#C45C26] text-white"
-                : badge === "جدید"
-                ? "bg-[#2D6A4F] text-white"
-                : "bg-[#D4AF37] text-white"
-            )}
-          >
-            {badge === "ویژه"
-              ? "👑 ویژه"
-              : badge === "محبوب"
-              ? "🔥 محبوب"
-              : badge === "جدید"
-              ? "✨ جدید"
-              : badge}
+        {badge && (
+          <span className="absolute top-2 right-2 bg-[#D4AF37] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+            {badge}
           </span>
         )}
 
         {isFeaturedToday && (
-          <span className="absolute top-2.5 right-2.5 text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#D4AF37] text-white shadow-md flex items-center gap-1">
-            ⭐ پیشنهاد امروز
-          </span>
-        )}
-
-        {hasDiscount && (
-          <span className="absolute top-2.5 left-2.5 text-[10px] font-black px-2.5 py-1 rounded-full bg-[#DC2626] text-white shadow-md">
-            ٪{discountPercent} off
+          <span className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+            ⭐ امروز
           </span>
         )}
 
         {!isAvailable && (
-          <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
-            <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-white/95 text-[#1a1a1a]">
-              تمام شد
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <span className="bg-white text-red-600 text-xs font-bold px-3 py-1 rounded-full">
+              ناموجود
             </span>
           </div>
         )}
       </div>
 
-      <div className="p-3.5">
-        <h3 className="font-bold text-[#0F172A] text-[13px] leading-snug line-clamp-1">
-          {name}
-        </h3>
-
+      <div className="p-3 flex-1 flex flex-col">
+        <h3 className="font-bold text-sm text-[#0F172A] truncate">{name}</h3>
         {description && (
-          <p className="mt-1 text-[11px] text-[#64748B] line-clamp-2 leading-relaxed">
+          <p className="text-xs text-[#64748B] mt-0.5 line-clamp-2">
             {description}
           </p>
         )}
 
-        <div className="mt-3 flex items-center justify-between gap-2">
+        <div className="mt-auto pt-2 flex items-center justify-between gap-2">
           <div className="flex flex-col">
             {hasDiscount ? (
               <>
-                <span className="text-[13px] text-[#64748B] line-through leading-tight font-medium">
+                <span className="text-[10px] text-[#8B7355] line-through">
                   {price.toLocaleString("fa-IR")}
                 </span>
-                <div className="flex items-baseline gap-0.5">
-                  <span className="font-black text-[#DC2626] text-[15px] tracking-tight">
-                    {discountPrice!.toLocaleString("fa-IR")}
-                  </span>
-                  <span className="text-[10px] text-[#8B7355] font-medium">
-                    تومان
-                  </span>
-                </div>
+                <span className="text-sm font-black text-[#D4AF37]">
+                  {finalPrice.toLocaleString("fa-IR")} تومان
+                </span>
               </>
             ) : (
-              <div className="flex items-baseline gap-0.5">
-                <span className="font-black text-[#0F172A] text-[15px] tracking-tight">
-                  {price.toLocaleString("fa-IR")}
-                </span>
-                <span className="text-[10px] text-[#8B7355] font-medium">
-                  تومان
-                </span>
-              </div>
+              <span className="text-sm font-black text-[#0F172A]">
+                {finalPrice.toLocaleString("fa-IR")} تومان
+              </span>
             )}
           </div>
 
-          {onAdd && (
-            <>
-              {!isAvailable ? (
-                <button
-                  type="button"
-                  disabled
-                  className="h-8 min-w-[72px] px-3 rounded-xl text-[11px] font-bold bg-[#EDE8DF] text-[#8B7355] cursor-not-allowed"
-                >
-                  ناموجود
-                </button>
-              ) : inCart ? (
-                <div className="flex items-center gap-1.5 h-8 bg-[#0F172A] rounded-xl px-1">
+          {showAddButton && isAvailable && (
+            <div className="flex items-center gap-1">
+              {quantity > 0 ? (
+                <>
                   <button
                     type="button"
-                    onClick={() => onRemove?.(id)}
-                    className="w-6 h-6 flex items-center justify-center text-white text-base font-bold cursor-pointer hover:bg-white/10 rounded-lg"
+                    onClick={() => onRemove(id)}
+                    className="w-7 h-7 rounded-lg bg-[#F5F0E8] flex items-center justify-center cursor-pointer"
                   >
-                    −
+                    <Minus className="w-3.5 h-3.5 text-[#0F172A]" />
                   </button>
-                  <span className="text-white text-[12px] font-bold min-w-[16px] text-center">
+                  <span className="w-6 text-center text-sm font-bold">
                     {quantity}
                   </span>
                   <button
                     type="button"
                     onClick={() => onAdd(id)}
-                    className="w-6 h-6 flex items-center justify-center text-white text-base font-bold cursor-pointer hover:bg-white/10 rounded-lg"
+                    className="w-7 h-7 rounded-lg bg-[#D4AF37] flex items-center justify-center cursor-pointer"
                   >
-                    +
+                    <Plus className="w-3.5 h-3.5 text-white" />
                   </button>
-                </div>
+                </>
               ) : (
                 <button
                   type="button"
                   onClick={() => onAdd(id)}
-                  className="h-8 min-w-[72px] px-3 rounded-xl text-[11px] font-bold text-white active:scale-95 cursor-pointer shadow-sm transition-all bg-[#D4AF37] hover:bg-[#C4A034]"
+                  className="w-8 h-8 rounded-lg bg-[#D4AF37] flex items-center justify-center cursor-pointer hover:bg-[#C4A034] transition"
                 >
-                  + سفارش
+                  <Plus className="w-4 h-4 text-white" />
                 </button>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>

@@ -6,6 +6,8 @@ export const PLANS = {
     categoryLimit: 8,
     isPopular: false,
     orderRetentionDays: 0,
+    hasOrders: false, // <--- جدید
+    hasPos: false,    // <--- جدید
     features: {
       pos: false,
       discount: false,
@@ -25,6 +27,8 @@ export const PLANS = {
     categoryLimit: 20,
     isPopular: true,
     orderRetentionDays: 10,
+    hasOrders: true,  // <--- جدید
+    hasPos: true,     // <--- جدید
     features: {
       pos: true,
       discount: true,
@@ -44,6 +48,8 @@ export const PLANS = {
     categoryLimit: 50,
     isPopular: false,
     orderRetentionDays: 30,
+    hasOrders: true,  // <--- جدید
+    hasPos: true,     // <--- جدید
     features: {
       pos: true,
       discount: true,

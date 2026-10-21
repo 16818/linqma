@@ -1,0 +1,701 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
+import {
+  Search,
+  Check,
+  X,
+  Clock,
+  User,
+  Phone,
+  FileText,
+  Trash2,
+  Plus,
+  Minus,
+  Save,
+} from "lucide-react";
+import { AddItemsModal } from "@/components/business/AddItemsModal";
+import { findOrderByCode } from "./actions";
+
+interface OrderItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  imageUrl?: string | null;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  discount_price?: number | null;
+  image_url?: string | null;
+  category_id?: string | null;
+  is_available?: boolean;
+}
+
+interface Order {
+  id: string;
+  short_code: string;
+  items: OrderItem[];
+  total: number;
+  status: string;
+  created_at: string;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  customer_note?: string | null;
+  table_number?: string | null;
+}
+
+export default function POSPage() {
+  const supabase = createClient();
+  const searchParams = useSearchParams();
+  const businessQuery = searchParams.get("business");
+
+  const [code, setCode] = useState("");
+  const [order, setOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+
+  const [businessId, setBusinessId] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [showAddItems, setShowAddItems] = useState(false);
+
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editNote, setEditNote] = useState("");
+  const [editTable, setEditTable] = useState("");
+  const [savingInfo, setSavingInfo] = useState(false);
+
+  const [editItems, setEditItems] = useState<OrderItem[]>([]);
+  const [savingItems, setSavingItems] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      let finalBusinessId: string | null = null;
+
+      if (businessQuery) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          if (profile?.role === "admin") {
+            const { data: targetBusiness } = await supabase
+              .from("businesses")
+              .select("id")
+              .eq("id", businessQuery)
+              .maybeSingle();
+
+            if (targetBusiness) {
+              finalBusinessId = targetBusiness.id;
+            }
+          }
+        }
+      }
+
+      if (!finalBusinessId) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          const { data: ownBusiness } = await supabase
+            .from("businesses")
+            .select("id")
+            .eq("owner_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (ownBusiness) {
+            finalBusinessId = ownBusiness.id;
+          }
+        }
+      }
+
+      if (finalBusinessId) {
+        setBusinessId(finalBusinessId);
+        const { data: productsData } = await supabase
+          .from("products")
+          .select("*")
+          .eq("business_id", finalBusinessId)
+          .eq("is_active", true)
+          .order("sort_order");
+
+        if (productsData) setProducts(productsData);
+      }
+
+      setReady(true);
+    })();
+  }, [businessQuery, supabase]);
+
+  const searchOrder = async () => {
+    const cleanCode = code
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "");
+
+    if (!cleanCode) {
+      toast.error("کد سفارش را وارد کنید");
+      return;
+    }
+
+    setLoading(true);
+    setNotFound(false);
+    setOrder(null);
+
+    const result = await findOrderByCode({
+      code: cleanCode,
+      businessQuery,
+    });
+
+    setLoading(false);
+
+    if (!result.ok) {
+      if (result.error.includes("پیدا نشد")) {
+        setNotFound(true);
+      } else {
+        toast.error(result.error);
+      }
+      return;
+    }
+
+    const data = result.order as unknown as Order;
+    setOrder(data);
+    setEditItems(data.items);
+    setEditName(data.customer_name || "");
+    setEditPhone(data.customer_phone || "");
+    setEditNote(data.customer_note || "");
+    setEditTable(data.table_number || "");
+  };
+
+  const saveCustomerInfo = async () => {
+    if (!order) return;
+    setSavingInfo(true);
+
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        customer_name: editName.trim() || null,
+        customer_phone: editPhone.trim() || null,
+        customer_note: editNote.trim() || null,
+        table_number: editTable.trim() || null,
+      })
+      .eq("id", order.id);
+
+    setSavingInfo(false);
+
+    if (error) {
+      toast.error("خطا در ذخیره اطلاعات");
+      return;
+    }
+
+    toast.success("اطلاعات مشتری ذخیره شد");
+    setOrder({
+      ...order,
+      customer_name: editName.trim() || null,
+      customer_phone: editPhone.trim() || null,
+      customer_note: editNote.trim() || null,
+      table_number: editTable.trim() || null,
+    });
+  };
+
+  const updateItemQuantity = (idx: number, delta: number) => {
+    setEditItems((prev) =>
+      prev.map((item, i) =>
+        i === idx
+          ? { ...item, quantity: Math.max(0, item.quantity + delta) }
+          : item
+      )
+    );
+  };
+
+  const removeItem = (idx: number) => {
+    setEditItems((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const addProductToOrder = (productId: string) => {
+    const product = products.find((p) => p.id === productId);
+    if (!product) return;
+
+    const finalPrice =
+      product.discount_price && product.discount_price < product.price
+        ? product.discount_price
+        : product.price;
+
+    setEditItems((prev) => {
+      const existing = prev.find((item) => item.id === productId);
+      if (existing) {
+        return prev.map((item) =>
+          item.id === productId
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [
+        ...prev,
+        {
+          id: product.id,
+          name: product.name,
+          price: finalPrice,
+          quantity: 1,
+          imageUrl: product.image_url || undefined,
+        },
+      ];
+    });
+  };
+
+  const removeProductFromOrder = (productId: string) => {
+    setEditItems((prev) => {
+      const existing = prev.find((item) => item.id === productId);
+      if (!existing) return prev;
+      if (existing.quantity <= 1) {
+        return prev.filter((item) => item.id !== productId);
+      }
+      return prev.map((item) =>
+        item.id === productId
+          ? { ...item, quantity: item.quantity - 1 }
+          : item
+      );
+    });
+  };
+
+  const saveItems = async () => {
+    if (!order) return;
+
+    const filtered = editItems.filter((item) => item.quantity > 0);
+
+    if (filtered.length === 0) {
+      toast.error(
+        "سفارش نمی‌تواند خالی باشد. برای حذف کل سفارش از دکمه حذف استفاده کنید"
+      );
+      return;
+    }
+
+    setSavingItems(true);
+
+    const newTotal = filtered.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        items: filtered,
+        total: newTotal,
+      })
+      .eq("id", order.id);
+
+    setSavingItems(false);
+
+    if (error) {
+      toast.error("خطا در ذخیره اقلام");
+      return;
+    }
+
+    toast.success("اقلام سفارش به‌روز شد");
+    setOrder({ ...order, items: filtered, total: newTotal });
+    setEditItems(filtered);
+  };
+
+  const confirmOrder = async () => {
+    if (!order) return;
+
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: "confirmed" })
+      .eq("id", order.id);
+
+    if (error) {
+      toast.error("خطا در تأیید سفارش");
+      return;
+    }
+
+    toast.success("سفارش تأیید شد");
+    setOrder({ ...order, status: "confirmed" });
+  };
+
+  const deleteOrder = async () => {
+    if (!order) return;
+    if (
+      !confirm(
+        "آیا از حذف این سفارش مطمئن هستید؟ این کار قابل بازگشت نیست."
+      )
+    )
+      return;
+
+    const { error } = await supabase.from("orders").delete().eq("id", order.id);
+
+    if (error) {
+      toast.error("خطا در حذف سفارش");
+      return;
+    }
+
+    toast.success("سفارش حذف شد");
+    reset();
+  };
+
+  const reset = () => {
+    setCode("");
+    setOrder(null);
+    setNotFound(false);
+    setEditName("");
+    setEditPhone("");
+    setEditNote("");
+    setEditTable("");
+    setEditItems([]);
+    setShowAddItems(false);
+  };
+
+  const editTotal = editItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+
+  const hasItemsChanged = order
+    ? JSON.stringify(editItems) !== JSON.stringify(order.items)
+    : false;
+
+  if (!ready) {
+    return (
+      <div className="max-w-3xl space-y-6">
+        <div className="text-center py-16 text-navy/50">در حال بارگذاری...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-3xl space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-navy">صندوق</h1>
+        <p className="text-navy/60 text-sm mt-1">
+          کد سفارش مشتری را وارد کنید
+        </p>
+      </div>
+
+      <div className="bg-white rounded-3xl border border-[#EDE8DF] p-6 shadow-sm">
+        <label className="text-sm font-medium text-navy/70">کد سفارش</label>
+        <div className="mt-2 flex gap-2">
+          <input
+            type="text"
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") searchOrder();
+            }}
+            maxLength={8}
+            placeholder="مثلاً A2C4D6"
+            className="flex-1 h-14 px-4 rounded-2xl border-2 border-[#EDE8DF] focus:outline-none focus:border-gold text-center text-2xl font-black tracking-widest"
+            autoFocus
+          />
+          <button
+            onClick={searchOrder}
+            disabled={loading || !code.trim()}
+            className="w-14 h-14 rounded-2xl bg-gold text-white flex items-center justify-center cursor-pointer hover:bg-gold-dark transition disabled:opacity-50"
+          >
+            <Search className="w-6 h-6" />
+          </button>
+        </div>
+      </div>
+
+      {notFound && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+          <p className="text-3xl mb-2">❌</p>
+          <p className="font-bold text-red-700">سفارشی با این کد پیدا نشد</p>
+          <p className="text-sm text-red-600 mt-1">
+            کد را چک کنید و دوباره امتحان کنید
+          </p>
+          <button
+            onClick={reset}
+            className="mt-4 text-sm text-red-700 font-bold underline cursor-pointer"
+          >
+            پاک کردن
+          </button>
+        </div>
+      )}
+
+      {order && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-3xl border border-[#EDE8DF] overflow-hidden shadow-sm">
+            <div className="p-5 bg-[#0F172A] text-white flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <p className="text-[10px] text-white/40 tracking-wider">
+                  کد سفارش
+                </p>
+                <p className="text-xl font-black tracking-[0.25em] text-white/60">
+                  {order.short_code}
+                </p>
+              </div>
+              {order.table_number && (
+                <div className="text-center">
+                  <p className="text-[10px] text-white/40 tracking-wider">
+                    میز
+                  </p>
+                  <p className="text-xl font-black">{order.table_number}</p>
+                </div>
+              )}
+              <div className="text-left">
+                <p className="text-[10px] text-white/40 tracking-wider mb-1">
+                  وضعیت
+                </p>
+                <span
+                  className={`inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full ${
+                    order.status === "confirmed"
+                      ? "bg-green-500/20 text-green-300"
+                      : "bg-yellow-500/20 text-yellow-300"
+                  }`}
+                >
+                  {order.status === "confirmed" ? (
+                    <>
+                      <Check className="w-3 h-3" />
+                      تأیید شده
+                    </>
+                  ) : (
+                    <>
+                      <Clock className="w-3 h-3" />
+                      در انتظار
+                    </>
+                  )}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-5 space-y-3">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-bold text-navy/70">
+                  اقلام سفارش (قابل ویرایش)
+                </p>
+                {hasItemsChanged && (
+                  <button
+                    onClick={saveItems}
+                    disabled={savingItems}
+                    className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl bg-gold text-white cursor-pointer hover:bg-gold-dark transition disabled:opacity-60"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    {savingItems ? "..." : "ذخیره تغییرات"}
+                  </button>
+                )}
+              </div>
+
+              {editItems.length === 0 ? (
+                <div className="text-center py-6 text-navy/40 text-sm">
+                  سفارش خالی است
+                </div>
+              ) : (
+                editItems.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-3 py-2 border-b border-[#EDE8DF] last:border-b-0"
+                  >
+                    <div className="w-10 h-10 rounded-xl overflow-hidden bg-[#F5F0E8] shrink-0">
+                      {item.imageUrl ? (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[10px] text-navy/30">
+                          —
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-navy truncate">
+                        {item.name}
+                      </p>
+                      <p className="text-xs text-navy/50">
+                        {item.price.toLocaleString("fa-IR")} تومان
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1 bg-[#F5F0E8] rounded-xl p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => updateItemQuantity(idx, -1)}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-navy hover:bg-white cursor-pointer"
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="text-sm font-bold w-6 text-center">
+                        {item.quantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => updateItemQuantity(idx, 1)}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-navy hover:bg-white cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <p className="font-black text-sm text-navy shrink-0 w-20 text-left">
+                      {(item.price * item.quantity).toLocaleString("fa-IR")}
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => removeItem(idx)}
+                      className="p-1.5 text-navy/30 hover:text-red-500 cursor-pointer"
+                      aria-label="حذف"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))
+              )}
+
+              <button
+                type="button"
+                onClick={() => setShowAddItems(true)}
+                className="w-full h-11 rounded-2xl bg-white border-2 border-dashed border-[#D4AF37] text-navy font-bold text-sm cursor-pointer hover:bg-[#D4AF37]/5 transition flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4 text-[#D4AF37]" />
+                افزودن آیتم جدید
+              </button>
+
+              <div className="pt-3 flex items-center justify-between border-t-2 border-[#EDE8DF] mt-3">
+                <span className="text-sm font-bold text-navy/70">جمع کل</span>
+                <span className="font-black text-2xl text-gold">
+                  {editTotal.toLocaleString("fa-IR")}
+                  <span className="text-xs mr-1">تومان</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl border border-[#EDE8DF] p-5 shadow-sm">
+            <h3 className="font-bold text-sm text-navy mb-4">
+              اطلاعات مشتری
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-navy/60 flex items-center gap-1.5 mb-1.5">
+                  <User className="w-3.5 h-3.5" />
+                  نام
+                </label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="نام مشتری"
+                  className="w-full h-10 px-3 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-gold"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-navy/60 flex items-center gap-1.5 mb-1.5">
+                  <Phone className="w-3.5 h-3.5" />
+                  تلفن
+                </label>
+                <input
+                  type="tel"
+                  value={editPhone}
+                  onChange={(e) =>
+                    setEditPhone(e.target.value.replace(/\D/g, ""))
+                  }
+                  placeholder="۰۹۱۲۳۴۵۶۷۸۹"
+                  maxLength={11}
+                  dir="ltr"
+                  className="w-full h-10 px-3 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-gold text-left"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-navy/60 flex items-center gap-1.5 mb-1.5">
+                  <FileText className="w-3.5 h-3.5" />
+                  یادداشت
+                </label>
+                <input
+                  type="text"
+                  value={editNote}
+                  onChange={(e) => setEditNote(e.target.value)}
+                  placeholder="مثلاً بدون شکر"
+                  className="w-full h-10 px-3 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-gold"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-navy/60 mb-1.5 block">
+                  شماره میز
+                </label>
+                <input
+                  type="text"
+                  value={editTable}
+                  onChange={(e) => setEditTable(e.target.value)}
+                  placeholder="مثلاً ۵"
+                  maxLength={3}
+                  className="w-full h-10 px-3 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-gold"
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={saveCustomerInfo}
+              disabled={savingInfo}
+              className="mt-4 w-full h-10 rounded-xl bg-[#F5F0E8] text-navy font-bold text-sm cursor-pointer hover:bg-[#EFE9DF] transition disabled:opacity-60"
+            >
+              {savingInfo ? "در حال ذخیره..." : "ذخیره اطلاعات مشتری"}
+            </button>
+          </div>
+
+          <div className="bg-white rounded-3xl border border-[#EDE8DF] p-5 shadow-sm space-y-2">
+            <div className="flex gap-2">
+              <button
+                onClick={reset}
+                className="flex-1 h-12 rounded-2xl bg-white border border-[#EDE8DF] text-navy font-bold cursor-pointer hover:bg-[#EFE9DF] transition flex items-center justify-center gap-2"
+              >
+                <X className="w-4 h-4" />
+                سفارش جدید
+              </button>
+              {order.status !== "confirmed" && (
+                <button
+                  onClick={confirmOrder}
+                  className="flex-1 h-12 rounded-2xl bg-gold text-white font-bold cursor-pointer hover:bg-gold-dark transition flex items-center justify-center gap-2"
+                >
+                  <Check className="w-4 h-4" />
+                  تأیید سفارش
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={deleteOrder}
+              className="w-full h-11 rounded-2xl bg-white border border-red-200 text-red-600 font-bold text-sm cursor-pointer hover:bg-red-50 transition flex items-center justify-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              حذف کامل سفارش
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showAddItems && (
+        <AddItemsModal
+          products={products}
+          cart={editItems}
+          onAdd={addProductToOrder}
+          onRemove={removeProductFromOrder}
+          onClose={() => setShowAddItems(false)}
+        />
+      )}
+    </div>
+  );
+}

@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { OrdersClient } from "./OrdersClient";
 import { resolveDashboardBusiness } from "@/lib/dashboard-business";
+import { getPlanConfig } from "@/lib/plans";
+import { UpgradeGate } from "@/components/dashboard/UpgradeGate";
 
 export default async function OrdersPage({
   searchParams,
@@ -19,6 +21,17 @@ export default async function OrdersPage({
 
   if (!business) {
     redirect("/dashboard/onboarding");
+  }
+
+  const plan = getPlanConfig(business.plan);
+
+  if (!plan.hasOrders) {
+    return (
+      <UpgradeGate
+        title="سفارش‌ها در پکیج پایه فعال نیست"
+        description="با ارتقا به پکیج حرفه‌ای یا ویژه، امکان مدیریت سفارش‌ها را خواهید داشت."
+      />
+    );
   }
 
   const { data: orders } = await supabase

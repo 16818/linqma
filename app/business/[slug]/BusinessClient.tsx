@@ -72,9 +72,9 @@ export function BusinessClient({
   const [searchQuery, setSearchQuery] = useState("");
 
   const planConfig = useMemo(() => getPlanConfig(business.plan), [business.plan]);
+  const hasOrders = planConfig.hasOrders;
   const socialLimit = planConfig.features.socialLinksLimit;
 
-  // ساخت لیست شبکه‌های پر شده
   const filledSocials = useMemo(() => {
     const list = [
       { key: "instagram", value: business.instagram },
@@ -107,6 +107,7 @@ export function BusinessClient({
   }, [cart, business.slug]);
 
   const addToCart = (productId: string) => {
+    if (!hasOrders) return;
     const product = products.find((p) => p.id === productId);
     if (!product) return;
 
@@ -138,6 +139,7 @@ export function BusinessClient({
   };
 
   const removeFromCart = (productId: string) => {
+    if (!hasOrders) return;
     setCart((prev) => {
       const existing = prev.find((item) => item.id === productId);
       if (!existing) return prev;
@@ -153,6 +155,7 @@ export function BusinessClient({
   };
 
   const getQuantity = (productId: string) => {
+    if (!hasOrders) return 0;
     const item = cart.find((i) => i.id === productId);
     return item ? item.quantity : 0;
   };
@@ -291,6 +294,7 @@ export function BusinessClient({
                   quantity={getQuantity(product.id)}
                   onAdd={addToCart}
                   onRemove={removeFromCart}
+                  showAddButton={hasOrders}
                 />
               ))}
             </div>
@@ -329,17 +333,20 @@ export function BusinessClient({
                 quantity={getQuantity(product.id)}
                 onAdd={addToCart}
                 onRemove={removeFromCart}
+                showAddButton={hasOrders}
               />
             ))}
           </div>
         )}
       </div>
 
-      <FloatingCart
-        itemCount={totalItems}
-        totalPrice={totalPrice}
-        onClick={() => router.push(`/business/${business.slug}/order`)}
-      />
+      {hasOrders && (
+        <FloatingCart
+          itemCount={totalItems}
+          totalPrice={totalPrice}
+          onClick={() => router.push(`/business/${business.slug}/order`)}
+        />
+      )}
     </div>
   );
 }
