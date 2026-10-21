@@ -43,7 +43,7 @@ export default async function ProductsPage({
       initialProducts={products || []}
       categories={categories || []}
       businessId={business.id}
-      plan={business.is_published ? "basic" : "basic"} // موقت
+      plan={business.plan}
       initialProductCount={count ?? 0}
     />
   );

@@ -82,19 +82,18 @@ export function ProductForm({
     const fileExt = file.name.split(".").pop();
     const fileName = `${businessId}/${Date.now()}.${fileExt}`;
 
+    // استفاده از باکت products که پالیسی دارد
     const { error: uploadError } = await supabase.storage
-      .from("product-images")
-      .upload(fileName, file);
+      .from("products")
+      .upload(fileName, file, { upsert: true });
 
     if (uploadError) {
-      toast.error("خطا در آپلود عکس");
+      toast.error("خطا در آپلود عکس: " + uploadError.message);
       setUploading(false);
       return;
     }
 
-    const { data } = supabase.storage
-      .from("product-images")
-      .getPublicUrl(fileName);
+    const { data } = supabase.storage.from("products").getPublicUrl(fileName);
 
     setImageUrl(data.publicUrl);
     setUploading(false);
@@ -105,7 +104,6 @@ export function ProductForm({
     e.preventDefault();
     setSaving(true);
 
-    // بررسی سقف محصول فقط برای ساخت جدید (نه ویرایش)
     if (!isEdit) {
       const { count, error: countError } = await supabase
         .from("products")
@@ -190,7 +188,6 @@ export function ProductForm({
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {/* عکس */}
           <div>
             <label className="text-sm font-medium text-navy/70">عکس محصول</label>
             <div className="mt-1.5 flex items-center gap-3">
@@ -215,7 +212,6 @@ export function ProductForm({
             </div>
           </div>
 
-          {/* نام */}
           <div>
             <label className="text-sm font-medium text-navy/70">نام محصول</label>
             <input
@@ -227,7 +223,6 @@ export function ProductForm({
             />
           </div>
 
-          {/* توضیحات */}
           <div>
             <label className="text-sm font-medium text-navy/70">توضیحات</label>
             <textarea
@@ -238,7 +233,6 @@ export function ProductForm({
             />
           </div>
 
-          {/* قیمت‌ها */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-medium text-navy/70">
@@ -268,7 +262,6 @@ export function ProductForm({
             </div>
           </div>
 
-          {/* دسته‌بندی */}
           <div>
             <label className="text-sm font-medium text-navy/70">
               دسته‌بندی
@@ -287,7 +280,6 @@ export function ProductForm({
             </select>
           </div>
 
-          {/* نشان */}
           <div>
             <label className="text-sm font-medium text-navy/70">نشان</label>
             <select
@@ -302,7 +294,6 @@ export function ProductForm({
             </select>
           </div>
 
-          {/* وضعیت‌ها */}
           <div className="flex flex-wrap gap-4 pt-2">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
