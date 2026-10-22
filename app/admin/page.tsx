@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-admin";
 import { createClient } from "@/lib/supabase/server";
 import { AdminBusinessesClient } from "./AdminBusinessesClient";
 import { CreateOwnerForm } from "@/components/admin/CreateOwnerForm";
 import { AdminHeader } from "@/components/admin/AdminHeader";
+import { Sparkles } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +36,13 @@ export default async function AdminPage() {
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <CreateOwnerForm />
+            <Link
+              href="/admin/sales-tools"
+              className="h-11 px-5 rounded-2xl bg-[#D4AF37] text-[#0F172A] font-bold text-sm flex items-center gap-2 cursor-pointer hover:bg-[#C4A034] transition"
+            >
+              <Sparkles className="w-4 h-4" />
+              ابزارهای فروش
+            </Link>
             <AdminHeader />
           </div>
         </div>
