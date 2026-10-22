@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Package,
@@ -11,9 +12,11 @@ import {
   Store,
   ShoppingCart,
   Receipt,
+  Ticket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { getPlanConfig } from "@/lib/plans";
 
 export default function DashboardLayout({
   children,
@@ -27,6 +30,42 @@ export default function DashboardLayout({
 
   const businessId = searchParams.get("business");
   const qs = businessId ? `?business=${businessId}` : "";
+
+  const [plan, setPlan] = useState<string>("basic");
+
+  useEffect(() => {
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      let finalBusinessId = businessId;
+
+      if (!finalBusinessId) {
+        const { data: ownBusiness } = await supabase
+          .from("businesses")
+          .select("id")
+          .eq("owner_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (ownBusiness) finalBusinessId = ownBusiness.id;
+      }
+
+      if (finalBusinessId) {
+        const { data: business } = await supabase
+          .from("businesses")
+          .select("plan")
+          .eq("id", finalBusinessId)
+          .maybeSingle();
+        if (business?.plan) setPlan(business.plan);
+      }
+    })();
+  }, [businessId, supabase]);
+
+  const planConfig = getPlanConfig(plan);
+  const hasAccessCodes = plan === "premium";
 
   const menuGroups = [
     {
@@ -42,6 +81,9 @@ export default function DashboardLayout({
       items: [
         { href: `/dashboard/pos${qs}`, label: "صندوق", icon: ShoppingCart },
         { href: `/dashboard/orders${qs}`, label: "سفارش‌ها", icon: Receipt },
+        ...(hasAccessCodes
+          ? [{ href: `/dashboard/access-codes${qs}`, label: "کدهای اشتراک", icon: Ticket }]
+          : []),
       ],
     },
     {

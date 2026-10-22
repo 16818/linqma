@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowRight,
   Trash2,
@@ -10,6 +10,7 @@ import {
   User,
   Phone,
   FileText,
+  Ticket,
 } from "lucide-react";
 import { AddItemsModal } from "@/components/business/AddItemsModal";
 import { createClient } from "@/lib/supabase/client";
@@ -42,6 +43,7 @@ export default function OrderPage({
   params: Promise<{ slug: string }>;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const [slug, setSlug] = useState<string>("");
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -54,12 +56,21 @@ export default function OrderPage({
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerNote, setCustomerNote] = useState("");
   const [tableNumber, setTableNumber] = useState("");
+  const [accessCode, setAccessCode] = useState("");
 
   const [honeypot, setHoneypot] = useState("");
 
   useEffect(() => {
     params.then((p) => setSlug(p.slug));
   }, [params]);
+
+  useEffect(() => {
+    // خواندن کد از URL (مثلاً ?code=T12)
+    const codeFromUrl = searchParams.get("code");
+    if (codeFromUrl) {
+      setAccessCode(codeFromUrl.toUpperCase());
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!slug) return;
@@ -119,7 +130,7 @@ export default function OrderPage({
         {
           id: product.id,
           name: product.name,
-          description: product.description || undefined, // <--- اضافه شد
+          description: product.description || undefined,
           price: finalPrice,
           quantity: 1,
           imageUrl: product.image_url || undefined,
@@ -188,6 +199,7 @@ export default function OrderPage({
       tableNumber,
       total: totalPrice,
       website: honeypot,
+      orderCode: accessCode || undefined,
     });
 
     if (!result.ok) {
@@ -399,10 +411,11 @@ export default function OrderPage({
           افزودن آیتم جدید
         </button>
 
-        <div className="bg-white rounded-2xl border border-[#EDE8DF] p-4">
-          <h3 className="font-bold text-sm text-[#0F172A] mb-3">
+        <div className="bg-white rounded-2xl border border-[#EDE8DF] p-4 space-y-4">
+          <h3 className="font-bold text-sm text-[#0F172A]">
             اطلاعات سفارش‌دهنده
           </h3>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-[#64748B] flex items-center gap-1.5 mb-1.5">
@@ -460,6 +473,25 @@ export default function OrderPage({
                 className="w-full h-10 px-3 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-[#D4AF37]"
               />
             </div>
+          </div>
+
+          <div className="border-t border-[#EDE8DF] pt-3">
+            <label className="text-xs font-medium text-[#64748B] flex items-center gap-1.5 mb-1.5">
+              <Ticket className="w-3.5 h-3.5" />
+              کد اشتراک / میز (اختیاری)
+            </label>
+            <input
+              type="text"
+              value={accessCode}
+              onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
+              placeholder="مثلاً T12 یا کد باشگاه"
+              dir="ltr"
+              className="w-full h-10 px-3 rounded-xl border border-[#EDE8DF] text-sm focus:outline-none focus:border-[#D4AF37] text-left"
+            />
+            <p className="mt-1 text-[10px] text-[#64748B]">
+              اگر کد اشتراک دارید، وارد کنید. در صورت نیاز، کد میز از این کد
+              خوانده می‌شود.
+            </p>
           </div>
         </div>
       </div>

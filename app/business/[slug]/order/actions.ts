@@ -19,8 +19,6 @@ function generateOrderCode() {
 }
 
 function hashKey(s: string) {
-  // ساده: برای MVP از خود رشته استفاده می‌کنیم
-  // در تولید می‌توانید از crypto.createHash('sha256') استفاده کنید
   return s.slice(0, 64);
 }
 
@@ -67,7 +65,8 @@ export async function createOrderAction(input: {
   customerNote?: string;
   tableNumber?: string;
   total: number;
-  website?: string; // honeypot
+  website?: string;
+  orderCode?: string;
 }) {
   // 1) Honeypot
   if (input.website && input.website.trim() !== "") {
@@ -78,7 +77,7 @@ export async function createOrderAction(input: {
   const supabase = await createClient();
   const { data: business } = await supabase
     .from("businesses")
-    .select("id, plan, is_published, order_require_phone, order_max_per_window, order_window_seconds")
+    .select("id, plan, is_published, order_require_phone, order_max_per_window, order_window_seconds, require_order_code")
     .eq("id", input.businessId)
     .single();
 
@@ -125,7 +124,53 @@ export async function createOrderAction(input: {
     };
   }
 
-  // 5) Insert
+  // 5) بررسی کد اشتراک (در صورت وجود)
+  let accessCodeId: string | null = null;
+  let accessCodeText: string | null = null;
+  let tableNo = input.tableNumber?.trim() || null;
+  let discountPercent: number | null = null;
+
+  const rawCode = input.orderCode?.trim().toUpperCase();
+
+  if (business.require_order_code && !rawCode) {
+    return { ok: false as const, message: "وارد کردن کد سفارش الزامی است." };
+  }
+
+  if (rawCode) {
+    const { data: codeRow } = await supabase
+      .from("order_access_codes")
+      .select("*")
+      .eq("business_id", business.id)
+      .eq("code", rawCode)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (!codeRow) {
+      return { ok: false as const, message: "کد نامعتبر است." };
+    }
+    if (codeRow.expires_at && new Date(codeRow.expires_at) < new Date()) {
+      return { ok: false as const, message: "کد منقضی شده است." };
+    }
+    if (codeRow.max_uses != null && codeRow.used_count >= codeRow.max_uses) {
+      return { ok: false as const, message: "سقف استفاده از این کد پر شده است." };
+    }
+
+    accessCodeId = codeRow.id;
+    accessCodeText = codeRow.code;
+    if (codeRow.kind === "table" && codeRow.table_no) {
+      tableNo = codeRow.table_no;
+    }
+    if (codeRow.kind === "member" && codeRow.discount_percent) {
+      discountPercent = codeRow.discount_percent;
+    }
+
+    await supabase
+      .from("order_access_codes")
+      .update({ used_count: codeRow.used_count + 1 })
+      .eq("id", codeRow.id);
+  }
+
+  // 6) Insert
   const code = generateOrderCode();
   const { data, error } = await supabase
     .from("orders")
@@ -138,7 +183,9 @@ export async function createOrderAction(input: {
       customer_name: input.customerName?.trim() || null,
       customer_phone: input.customerPhone?.trim() || null,
       customer_note: input.customerNote?.trim() || null,
-      table_number: input.tableNumber?.trim() || null,
+      table_number: tableNo,
+      access_code_id: accessCodeId,
+      access_code_text: accessCodeText,
     })
     .select("id, short_code")
     .single();
@@ -148,5 +195,5 @@ export async function createOrderAction(input: {
     return { ok: false as const, message: error.message || "خطا در ثبت سفارش" };
   }
 
-  return { ok: true as const, order: data };
+  return { ok: true as const, order: data, discountPercent };
 }
