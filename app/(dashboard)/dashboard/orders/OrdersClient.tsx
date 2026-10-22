@@ -23,6 +23,7 @@ import { createClient } from "@/lib/supabase/client";
 interface OrderItem {
   id: string;
   name: string;
+  description?: string;
   price: number;
   quantity: number;
   imageUrl?: string | null;
@@ -338,21 +339,33 @@ export function OrdersClient({
                   </div>
                 )}
 
-                <div className="space-y-1.5 mb-3">
+                <div className="space-y-2 mb-3">
                   {order.items.map((item, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between text-sm"
+                      className="flex items-center justify-between bg-[#FAF7F2] rounded-xl px-3 py-2"
                     >
-                      <div className="flex items-center gap-2">
-                        <Package className="w-3.5 h-3.5 text-navy/40" />
-                        <span className="text-navy/80">{item.name}</span>
-                        <span className="text-navy/40 text-xs">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Package className="w-4 h-4 text-[#D4AF37] shrink-0" />
+                        <div className="min-w-0">
+                          <span className="text-[#0F172A] font-bold text-sm block truncate">
+                            {item.name}
+                          </span>
+                          {item.description && (
+                            <span className="text-[10px] text-[#64748B] block truncate">
+                              {item.description}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[#0F172A]/60 text-xs font-medium shrink-0">
                           × {item.quantity}
                         </span>
                       </div>
-                      <span className="text-navy/70 text-xs">
+                      <span className="text-[#0F172A] font-black text-sm shrink-0 mr-2">
                         {(item.price * item.quantity).toLocaleString("fa-IR")}
+                        <span className="text-[10px] font-normal text-[#0F172A]/60 mr-1">
+                          تومان
+                        </span>
                       </span>
                     </div>
                   ))}

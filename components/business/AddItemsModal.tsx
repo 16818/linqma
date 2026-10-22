@@ -17,6 +17,7 @@ interface Product {
 interface CartItem {
   id: string;
   name: string;
+  description?: string;
   price: number;
   quantity: number;
   imageUrl?: string | null;
@@ -76,7 +77,6 @@ export function AddItemsModal({
         className="bg-white w-full sm:max-w-2xl sm:rounded-3xl rounded-t-3xl max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* هدر */}
         <div className="p-4 border-b border-[#EDE8DF] flex items-center gap-3 shrink-0">
           <div className="flex-1 relative">
             <Search className="w-4 h-4 text-[#64748B] absolute right-3 top-1/2 -translate-y-1/2" />
@@ -99,7 +99,6 @@ export function AddItemsModal({
           </button>
         </div>
 
-        {/* لیست محصولات */}
         <div className="flex-1 overflow-y-auto p-3">
           {filtered.length === 0 ? (
             <div className="text-center py-16 text-[#8B7355]/60 text-sm">
@@ -135,6 +134,11 @@ export function AddItemsModal({
                       <p className="font-bold text-sm text-[#0F172A] truncate">
                         {product.name}
                       </p>
+                      {product.description && (
+                        <p className="text-[10px] text-[#64748B] truncate mt-0.5">
+                          {product.description}
+                        </p>
+                      )}
                       <div className="flex items-baseline gap-1.5 mt-0.5">
                         {hasDiscount && (
                           <span className="text-[10px] text-[#94A3B8] line-through">
@@ -190,7 +194,6 @@ export function AddItemsModal({
           )}
         </div>
 
-        {/* دکمه پایین */}
         <div className="p-4 border-t border-[#EDE8DF] shrink-0 bg-white">
           <button
             type="button"

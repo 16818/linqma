@@ -23,6 +23,7 @@ import { findOrderByCode } from "./actions";
 interface OrderItem {
   id: string;
   name: string;
+  description?: string;
   price: number;
   quantity: number;
   imageUrl?: string | null;
@@ -251,6 +252,7 @@ export default function POSPage() {
         {
           id: product.id,
           name: product.name,
+          description: product.description || undefined, // <--- اضافه شد
           price: finalPrice,
           quantity: 1,
           imageUrl: product.image_url || undefined,
@@ -520,6 +522,11 @@ export default function POSPage() {
                       <p className="font-bold text-sm text-navy truncate">
                         {item.name}
                       </p>
+                      {item.description && (
+                        <p className="text-[10px] text-navy/50 truncate">
+                          {item.description}
+                        </p>
+                      )}
                       <p className="text-xs text-navy/50">
                         {item.price.toLocaleString("fa-IR")} تومان
                       </p>

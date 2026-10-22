@@ -14,10 +14,12 @@ import {
 import { AddItemsModal } from "@/components/business/AddItemsModal";
 import { createClient } from "@/lib/supabase/client";
 import { BrandedQRCode } from "@/components/shared/BrandedQRCode";
+import { createOrderAction } from "./actions";
 
 interface CartItem {
   id: string;
   name: string;
+  description?: string;
   price: number;
   quantity: number;
   imageUrl?: string;
@@ -52,6 +54,8 @@ export default function OrderPage({
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerNote, setCustomerNote] = useState("");
   const [tableNumber, setTableNumber] = useState("");
+
+  const [honeypot, setHoneypot] = useState("");
 
   useEffect(() => {
     params.then((p) => setSlug(p.slug));
@@ -115,6 +119,7 @@ export default function OrderPage({
         {
           id: product.id,
           name: product.name,
+          description: product.description || undefined, // <--- اضافه شد
           price: finalPrice,
           quantity: 1,
           imageUrl: product.image_url || undefined,
@@ -170,62 +175,27 @@ export default function OrderPage({
     0
   );
 
-  const generateCode = () => {
-    const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-    const digits = "0123456789";
-    let code = "";
-    for (let i = 0; i < 2; i++) {
-      code += letters.charAt(Math.floor(Math.random() * letters.length));
-    }
-    for (let i = 0; i < 4; i++) {
-      code += digits.charAt(Math.floor(Math.random() * digits.length));
-    }
-    return code;
-  };
-
   const submitOrder = async () => {
     if (cart.length === 0) return;
     if (!businessId) return;
 
-    let code = "";
-    let inserted = false;
-    let lastError: unknown = null;
+    const result = await createOrderAction({
+      businessId,
+      items: cart,
+      customerName,
+      customerPhone,
+      customerNote,
+      tableNumber,
+      total: totalPrice,
+      website: honeypot,
+    });
 
-    for (let attempt = 0; attempt < 5; attempt++) {
-      code = generateCode();
-
-      const payload = {
-        business_id: businessId,
-        short_code: code,
-        items: cart,
-        total: totalPrice,
-        status: "pending",
-        customer_name: customerName.trim() || null,
-        customer_phone: customerPhone.trim() || null,
-        customer_note: customerNote.trim() || null,
-        table_number: tableNumber.trim() || null,
-      };
-
-      const { error } = await supabase.from("orders").insert(payload);
-
-      if (!error) {
-        inserted = true;
-        break;
-      }
-
-      if (error.code !== "23505") {
-        lastError = error;
-        break;
-      }
-    }
-
-    if (!inserted) {
-      console.error("Order insert failed:", lastError);
-      alert("خطا در ثبت سفارش. لطفاً دوباره تلاش کنید.");
+    if (!result.ok) {
+      alert(result.message);
       return;
     }
 
-    setOrderCode(code);
+    setOrderCode(result.order.short_code);
   };
 
   if (orderCode) {
@@ -331,6 +301,16 @@ export default function OrderPage({
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] font-[Vazirmatn] pb-32" dir="rtl">
+      <input
+        type="text"
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        className="absolute left-[-9999px] h-0 w-0 opacity-0"
+        value={honeypot}
+        onChange={(e) => setHoneypot(e.target.value)}
+      />
+
       <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-[#EDE8DF]">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <button
@@ -375,6 +355,11 @@ export default function OrderPage({
                 <p className="font-bold text-sm text-[#0F172A] truncate">
                   {item.name}
                 </p>
+                {item.description && (
+                  <p className="text-[10px] text-[#64748B] truncate">
+                    {item.description}
+                  </p>
+                )}
                 <div className="mt-1.5 flex items-center gap-2">
                   <button
                     type="button"
