@@ -3,13 +3,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImageUpload } from "@/components/ImageUpload";
-import { Download } from "lucide-react";
+import { Download, ChevronDown } from "lucide-react";
 import QRCode from "qrcode";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { getPlanConfig } from "@/lib/plans";
+import { ChangePasswordForm } from "@/components/dashboard/ChangePasswordForm";
 
 interface Business {
   id: string;
@@ -29,6 +29,36 @@ interface Business {
   rubika?: string | null;
   eitaa?: string | null;
   bale?: string | null;
+}
+
+function AccordionSection({
+  title,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div className="bg-white rounded-3xl border border-[#EDE8DF] overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between p-5 text-right font-bold text-[#0F172A] hover:bg-[#FAF7F2] transition cursor-pointer"
+      >
+        {title}
+        <ChevronDown
+          className={`w-5 h-5 text-[#0F172A]/50 transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+      {open && <div className="p-5 border-t border-[#EDE8DF] space-y-4">{children}</div>}
+    </div>
+  );
 }
 
 export function SettingsClient({ business }: { business: Business }) {
@@ -140,176 +170,158 @@ export function SettingsClient({ business }: { business: Business }) {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>اطلاعات اصلی</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <label className="text-sm font-medium text-navy/70">
-              نام کسب و کار
-            </label>
+      <AccordionSection title="اطلاعات اصلی" defaultOpen>
+        <div>
+          <label className="text-sm font-medium text-navy/70">
+            نام کسب و کار
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50"
+          />
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-navy/70">
+            آدرس اختصاصی
+          </label>
+          <div className="mt-1.5 flex items-center gap-2">
+            <span className="text-sm text-navy/50 whitespace-nowrap">
+              linqma.ir/
+            </span>
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50"
+              value={slug}
+              onChange={(e) =>
+                setSlug(
+                  e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "")
+                )
+              }
+              className="flex-1 h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50"
             />
           </div>
+        </div>
 
-          <div>
-            <label className="text-sm font-medium text-navy/70">
-              آدرس اختصاصی
-            </label>
-            <div className="mt-1.5 flex items-center gap-2">
-              <span className="text-sm text-navy/50 whitespace-nowrap">
-                linqma.ir/
-              </span>
-              <input
-                type="text"
-                value={slug}
-                onChange={(e) =>
-                  setSlug(
-                    e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "")
-                  )
-                }
-                className="flex-1 h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50"
-              />
-            </div>
-          </div>
+        <div>
+          <label className="text-sm font-medium text-navy/70">
+            توضیح کوتاه
+          </label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={2}
+            className="mt-1.5 w-full px-4 py-3 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 resize-none"
+          />
+        </div>
 
-          <div>
-            <label className="text-sm font-medium text-navy/70">
-              توضیح کوتاه
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              className="mt-1.5 w-full px-4 py-3 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 resize-none"
-            />
-          </div>
+        <div>
+          <label className="text-sm font-medium text-navy/70">آدرس</label>
+          <input
+            type="text"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50"
+          />
+        </div>
 
-          <div>
-            <label className="text-sm font-medium text-navy/70">آدرس</label>
-            <input
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50"
-            />
-          </div>
+        <div>
+          <label className="text-sm font-medium text-navy/70">
+            شماره تماس
+          </label>
+          <input
+            type="text"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50"
+          />
+        </div>
 
-          <div>
-            <label className="text-sm font-medium text-navy/70">
-              شماره تماس
-            </label>
-            <input
-              type="text"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50"
-            />
-          </div>
+        <div>
+          <label className="text-sm font-medium text-navy/70">
+            ساعات کاری
+          </label>
+          <input
+            type="text"
+            value={workingHours}
+            onChange={(e) => setWorkingHours(e.target.value)}
+            placeholder="08:00-23:00"
+            dir="ltr"
+            className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left"
+          />
+          <p className="mt-1 text-xs text-navy/40">
+            فرمت: 08:00-23:00 (ساعت شروع و پایان)
+          </p>
+        </div>
 
+        <div className="flex items-center justify-between pt-2">
           <div>
-            <label className="text-sm font-medium text-navy/70">
-              ساعات کاری
-            </label>
-            <input
-              type="text"
-              value={workingHours}
-              onChange={(e) => setWorkingHours(e.target.value)}
-              placeholder="08:00-23:00"
-              dir="ltr"
-              className="mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left"
-            />
-            <p className="mt-1 text-xs text-navy/40">
-              فرمت: 08:00-23:00 (ساعت شروع و پایان)
+            <p className="font-medium text-navy">وضعیت انتشار</p>
+            <p className="text-sm text-navy/50">
+              صفحه عمومی قابل مشاهده باشد
             </p>
           </div>
-
-          <div className="flex items-center justify-between pt-2">
-            <div>
-              <p className="font-medium text-navy">وضعیت انتشار</p>
-              <p className="text-sm text-navy/50">
-                صفحه عمومی قابل مشاهده باشد
-              </p>
-            </div>
-            <button
-              onClick={() => setIsPublished(!isPublished)}
-              className={`w-12 h-7 rounded-full transition-colors cursor-pointer ${
-                isPublished ? "bg-gold" : "bg-navy/20"
+          <button
+            onClick={() => setIsPublished(!isPublished)}
+            className={`w-12 h-7 rounded-full transition-colors cursor-pointer ${
+              isPublished ? "bg-gold" : "bg-navy/20"
+            }`}
+          >
+            <div
+              className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                isPublished ? "translate-x-1" : "translate-x-6"
               }`}
-            >
-              <div
-                className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                  isPublished ? "translate-x-1" : "translate-x-6"
+            />
+          </button>
+        </div>
+      </AccordionSection>
+
+      <AccordionSection
+        title={`شبکه‌های اجتماعی (حداکثر ${socialLimit} مورد)`}
+      >
+        <p className="text-xs text-navy/50 leading-relaxed">
+          می‌توانید حداکثر {socialLimit} شبکه اجتماعی را پر کنید. بقیه فیلدها
+          غیرفعال می‌شوند. فقط موارد پر شده در ویترین نمایش داده می‌شوند.
+        </p>
+
+        {allSocials.map((social) => {
+          const isDisabled = isAtLimit && social.value.trim() === "";
+          return (
+            <div key={social.key}>
+              <label className="text-sm font-medium text-navy/70">
+                {social.label}
+              </label>
+              <input
+                type="text"
+                value={social.value}
+                onChange={(e) => social.setter(e.target.value)}
+                placeholder={social.placeholder}
+                dir="ltr"
+                disabled={isDisabled}
+                className={`mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left ${
+                  isDisabled ? "bg-gray-100 cursor-not-allowed opacity-60" : ""
                 }`}
               />
-            </button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            شبکه‌های اجتماعی (انتخاب حداکثر {socialLimit} مورد از {allSocials.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-xs text-navy/50 leading-relaxed">
-            می‌توانید حداکثر {socialLimit} شبکه اجتماعی را پر کنید. بقیه فیلدها
-            غیرفعال می‌شوند. فقط موارد پر شده در ویترین نمایش داده می‌شوند.
-          </p>
-
-          {allSocials.map((social) => {
-            const isDisabled = isAtLimit && social.value.trim() === "";
-            return (
-              <div key={social.key}>
-                <label className="text-sm font-medium text-navy/70">
-                  {social.label}
-                </label>
-                <input
-                  type="text"
-                  value={social.value}
-                  onChange={(e) => social.setter(e.target.value)}
-                  placeholder={social.placeholder}
-                  dir="ltr"
-                  disabled={isDisabled}
-                  className={`mt-1.5 w-full h-11 px-4 rounded-2xl border border-[#EDE8DF] focus:outline-none focus:ring-2 focus:ring-gold/50 text-left ${
-                    isDisabled ? "bg-gray-100 cursor-not-allowed opacity-60" : ""
-                  }`}
-                />
-              </div>
-            );
-          })}
-
-          {socialLimit < allSocials.length && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
-              ⚠️ در پکیج {planConfig.label}، فقط {socialLimit} شبکه اجتماعی قابل
-              ویرایش است. برای افزودن شبکه‌های بیشتر، پکیج خود را ارتقا دهید.
             </div>
-          )}
-        </CardContent>
-      </Card>
+          );
+        })}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>لوگو و کاور</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <ImageUpload value={logoUrl} onChange={setLogoUrl} folder="logos" />
-          <ImageUpload value={coverUrl} onChange={setCoverUrl} folder="covers" />
-        </CardContent>
-      </Card>
+        {socialLimit < allSocials.length && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+            ⚠️ در پکیج {planConfig.label}، فقط {socialLimit} شبکه اجتماعی قابل
+            ویرایش است. برای افزودن شبکه‌های بیشتر، پکیج خود را ارتقا دهید.
+          </div>
+        )}
+      </AccordionSection>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>QR Code کسب و کار</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center gap-4">
+      <AccordionSection title="لوگو و کاور">
+        <ImageUpload value={logoUrl} onChange={setLogoUrl} folder="logos" />
+        <ImageUpload value={coverUrl} onChange={setCoverUrl} folder="covers" />
+      </AccordionSection>
+
+      <AccordionSection title="QR Code کسب و کار">
+        <div className="flex flex-col items-center gap-4">
           {qrDataUrl ? (
             <img
               src={qrDataUrl}
@@ -326,8 +338,15 @@ export function SettingsClient({ business }: { business: Business }) {
             <Download className="w-4 h-4" />
             دانلود QR Code
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </AccordionSection>
+
+      <AccordionSection title="امنیت حساب">
+        <p className="mb-4 text-sm text-navy/60">
+          رمز اولیه‌ای که از پشتیبانی گرفتید را اینجا عوض کنید.
+        </p>
+        <ChangePasswordForm />
+      </AccordionSection>
 
       <Button
         variant="primary"

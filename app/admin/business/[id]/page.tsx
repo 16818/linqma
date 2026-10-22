@@ -12,6 +12,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { TransferOwnershipButton } from "@/components/admin/TransferOwnershipButton";
+import { SetOwnerPassword } from "@/components/admin/SetOwnerPassword";
 
 export const dynamic = "force-dynamic";
 
@@ -78,16 +79,16 @@ export default async function AdminBusinessPage({
               <span className="font-bold text-[#D4AF37]">{business.name}</span>
             </span>
           </div>
-<div className="flex items-center gap-2 shrink-0">
-  <Link
-    href="/admin"
-    className="h-8 px-3 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold flex items-center gap-1.5 transition"
-  >
-    <ArrowRight className="w-3.5 h-3.5" />
-    بازگشت به پنل مدیر
-  </Link>
-  <LogoutButton />
-</div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link
+              href="/admin"
+              className="h-8 px-3 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold flex items-center gap-1.5 transition"
+            >
+              <ArrowRight className="w-3.5 h-3.5" />
+              بازگشت به پنل مدیر
+            </Link>
+            <LogoutButton />
+          </div>
         </div>
       </div>
 
@@ -175,6 +176,9 @@ export default async function AdminBusinessPage({
             />
           </div>
         </div>
+
+        {/* تنظیم رمز عبور مالک (جدید) */}
+        <SetOwnerPassword businessId={business.id} />
 
         {/* آمار */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -301,6 +305,7 @@ export default async function AdminBusinessPage({
     </div>
   );
 }
+
 function LogoutButton() {
   return (
     <form action="/auth/logout" method="post">
