@@ -1,6 +1,5 @@
 export type PlanId = "basic" | "pro" | "premium";
 
-// شماره واتساپ پشتیبانی (بدون صفر و +) — این را با شماره واقعی جایگزین کنید
 export const SUPPORT_WHATSAPP = "989123456789";
 
 export const PLANS = {
@@ -16,6 +15,7 @@ export const PLANS = {
     categoryLimit: 8,
     hasOrders: false,
     hasPos: false,
+    hasCashier: false,
     orderRetentionDays: 0,
     isPopular: false,
     features: {
@@ -49,6 +49,7 @@ export const PLANS = {
     categoryLimit: 20,
     hasOrders: true,
     hasPos: true,
+    hasCashier: true,
     orderRetentionDays: 10,
     isPopular: true,
     features: {
@@ -82,6 +83,7 @@ export const PLANS = {
     categoryLimit: 50,
     hasOrders: true,
     hasPos: true,
+    hasCashier: true,
     orderRetentionDays: 30,
     isPopular: false,
     features: {

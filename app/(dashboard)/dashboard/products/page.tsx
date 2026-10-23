@@ -1,25 +1,25 @@
-﻿import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 import { ProductsClient } from "./ProductsClient";
-import { resolveDashboardBusiness } from "@/lib/dashboard-business";
+import { getDashboardContext } from "@/lib/dashboard-context";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function ProductsPage({
   searchParams,
 }: {
   searchParams: Promise<{ business?: string }>;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const sp = await searchParams;
+  const ctx = await getDashboardContext({ businessId: sp.business ?? null });
 
-  if (!user) redirect("/login");
-
-  const business = await resolveDashboardBusiness(searchParams);
-
-  if (!business) {
+  if (!ctx?.user) redirect("/login");
+  if (ctx.access === "cashier") redirect("/dashboard/pos");
+  if (ctx.access !== "owner" && ctx.access !== "admin") {
     redirect("/dashboard/onboarding");
   }
+  if (!ctx.business) redirect("/dashboard/onboarding");
+
+  const supabase = await createClient();
+  const business = ctx.business;
 
   const { data: products } = await supabase
     .from("products")

@@ -1,25 +1,19 @@
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { CategoriesClient } from "./CategoriesClient";
-import { resolveDashboardBusiness } from "@/lib/dashboard-business";
+import { getDashboardContext } from "@/lib/auth-business";
 
 export default async function CategoriesPage({
   searchParams,
 }: {
   searchParams: Promise<{ business?: string }>;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const ctx = await getDashboardContext();
 
-  if (!user) redirect("/login");
-
-  const business = await resolveDashboardBusiness(searchParams);
-
-  if (!business) {
-    redirect("/dashboard/onboarding");
+  if (ctx.access !== "owner") {
+    redirect("/dashboard/pos");
   }
+
+  const { supabase, business } = ctx;
 
   const { data: categories } = await supabase
     .from("categories")

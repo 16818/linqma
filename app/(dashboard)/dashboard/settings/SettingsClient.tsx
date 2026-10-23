@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { getPlanConfig } from "@/lib/plans";
 import { ChangePasswordForm } from "@/components/dashboard/ChangePasswordForm";
+import { CashierManager } from "@/components/dashboard/CashierManager";
 
 interface Business {
   id: string;
@@ -56,20 +57,32 @@ function AccordionSection({
           }`}
         />
       </button>
-      {open && <div className="p-5 border-t border-[#EDE8DF] space-y-4">{children}</div>}
+      {open && (
+        <div className="p-5 border-t border-[#EDE8DF] space-y-4">{children}</div>
+      )}
     </div>
   );
 }
 
-export function SettingsClient({ business }: { business: Business }) {
+export function SettingsClient({
+  business,
+  cashierEmail,
+}: {
+  business: Business;
+  cashierEmail?: string | null;
+}) {
   const [name, setName] = useState(business.name ?? "");
   const [slug, setSlug] = useState(business.slug ?? "");
   const [description, setDescription] = useState(business.description || "");
   const [address, setAddress] = useState(business.address || "");
   const [phone, setPhone] = useState(business.phone || "");
   const [workingHours, setWorkingHours] = useState(business.working_hours || "");
-  const [logoUrl, setLogoUrl] = useState<string | null>(business.logo_url ?? null);
-  const [coverUrl, setCoverUrl] = useState<string | null>(business.cover_url ?? null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(
+    business.logo_url ?? null
+  );
+  const [coverUrl, setCoverUrl] = useState<string | null>(
+    business.cover_url ?? null
+  );
   const [isPublished, setIsPublished] = useState(business.is_published);
 
   const [instagram, setInstagram] = useState(business.instagram || "");
@@ -84,22 +97,64 @@ export function SettingsClient({ business }: { business: Business }) {
   const router = useRouter();
   const supabase = createClient();
 
-  const planConfig = useMemo(() => getPlanConfig(business.plan), [business.plan]);
+  const planConfig = useMemo(
+    () => getPlanConfig(business.plan),
+    [business.plan]
+  );
   const socialLimit = planConfig.features.socialLinksLimit;
 
   const allSocials = [
-    { key: "instagram", label: "اینستاگرام", value: instagram, setter: setInstagram, placeholder: "@username یا لینک کامل" },
-    { key: "telegram", label: "تلگرام", value: telegram, setter: setTelegram, placeholder: "@username یا لینک کامل" },
-    { key: "whatsapp", label: "واتساپ", value: whatsapp, setter: setWhatsapp, placeholder: "09123456789" },
-    { key: "rubika", label: "روبیکا", value: rubika, setter: setRubika, placeholder: "نام کاربری یا لینک کامل" },
-    { key: "eitaa", label: "ایتا", value: eitaa, setter: setEitaa, placeholder: "نام کاربری یا لینک کامل" },
-    { key: "bale", label: "بله", value: bale, setter: setBale, placeholder: "نام کاربری یا لینک کامل" },
+    {
+      key: "instagram",
+      label: "اینستاگرام",
+      value: instagram,
+      setter: setInstagram,
+      placeholder: "@username یا لینک کامل",
+    },
+    {
+      key: "telegram",
+      label: "تلگرام",
+      value: telegram,
+      setter: setTelegram,
+      placeholder: "@username یا لینک کامل",
+    },
+    {
+      key: "whatsapp",
+      label: "واتساپ",
+      value: whatsapp,
+      setter: setWhatsapp,
+      placeholder: "09123456789",
+    },
+    {
+      key: "rubika",
+      label: "روبیکا",
+      value: rubika,
+      setter: setRubika,
+      placeholder: "نام کاربری یا لینک کامل",
+    },
+    {
+      key: "eitaa",
+      label: "ایتا",
+      value: eitaa,
+      setter: setEitaa,
+      placeholder: "نام کاربری یا لینک کامل",
+    },
+    {
+      key: "bale",
+      label: "بله",
+      value: bale,
+      setter: setBale,
+      placeholder: "نام کاربری یا لینک کامل",
+    },
   ];
 
-  const selectedCount = allSocials.filter((s) => s.value.trim() !== "").length;
+  const selectedCount = allSocials.filter(
+    (s) => s.value.trim() !== ""
+  ).length;
   const isAtLimit = selectedCount >= socialLimit;
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   const businessUrl = `${siteUrl}/business/${slug}`;
 
   useEffect(() => {
@@ -347,6 +402,15 @@ export function SettingsClient({ business }: { business: Business }) {
         </p>
         <ChangePasswordForm />
       </AccordionSection>
+
+      {planConfig.hasCashier && (
+        <AccordionSection title="مدیریت صندوق‌دار">
+          <CashierManager
+            hasFeature={planConfig.hasCashier}
+            existingEmail={cashierEmail}
+          />
+        </AccordionSection>
+      )}
 
       <Button
         variant="primary"

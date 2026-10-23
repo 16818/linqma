@@ -32,42 +32,62 @@ export default function DashboardLayout({
   const qs = businessId ? `?business=${businessId}` : "";
 
   const [plan, setPlan] = useState<string>("basic");
+  const [access, setAccess] = useState<"owner" | "cashier" | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) return;
-
-      let finalBusinessId = businessId;
-
-      if (!finalBusinessId) {
-        const { data: ownBusiness } = await supabase
-          .from("businesses")
-          .select("id")
-          .eq("owner_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (ownBusiness) finalBusinessId = ownBusiness.id;
+      if (!user) {
+        router.push("/login");
+        return;
       }
 
-      if (finalBusinessId) {
-        const { data: business } = await supabase
-          .from("businesses")
-          .select("plan")
-          .eq("id", finalBusinessId)
-          .maybeSingle();
-        if (business?.plan) setPlan(business.plan);
+      // بررسی نقش: owner یا cashier
+      const { data: owned } = await supabase
+        .from("businesses")
+        .select("id, plan")
+        .eq("owner_id", user.id)
+        .maybeSingle();
+
+      if (owned) {
+        setAccess("owner");
+        setPlan(owned.plan || "basic");
+        setLoading(false);
+        return;
       }
+
+      const { data: staff } = await supabase
+        .from("business_staff")
+        .select("business_id, businesses(plan)")
+        .eq("user_id", user.id)
+        .eq("role", "cashier")
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (staff) {
+        setAccess("cashier");
+        const biz = staff.businesses as
+          | { plan: string }
+          | { plan: string }[]
+          | null;
+        const planValue = Array.isArray(biz) ? biz[0]?.plan : biz?.plan;
+        setPlan(planValue || "basic");
+        setLoading(false);
+        return;
+      }
+
+      setAccess(null);
+      setLoading(false);
     })();
-  }, [businessId, supabase]);
+  }, [supabase, router]);
 
   const planConfig = getPlanConfig(plan);
   const hasAccessCodes = plan === "premium";
 
-  const menuGroups = [
+  const ownerMenuGroups = [
     {
       title: "فروشگاه",
       items: [
@@ -82,7 +102,13 @@ export default function DashboardLayout({
         { href: `/dashboard/pos${qs}`, label: "صندوق", icon: ShoppingCart },
         { href: `/dashboard/orders${qs}`, label: "سفارش‌ها", icon: Receipt },
         ...(hasAccessCodes
-          ? [{ href: `/dashboard/access-codes${qs}`, label: "کدهای اشتراک", icon: Ticket }]
+          ? [
+              {
+                href: `/dashboard/access-codes${qs}`,
+                label: "کدهای اشتراک",
+                icon: Ticket,
+              },
+            ]
           : []),
       ],
     },
@@ -98,12 +124,30 @@ export default function DashboardLayout({
     },
   ];
 
-  const mobileMenuItems = [
+  const cashierMenuGroups = [
+    {
+      title: "عملیات",
+      items: [
+        { href: `/dashboard/pos${qs}`, label: "صندوق", icon: ShoppingCart },
+      ],
+    },
+  ];
+
+  const menuGroups = access === "cashier" ? cashierMenuGroups : ownerMenuGroups;
+
+  const ownerMobileMenuItems = [
     { href: `/dashboard${qs}`, label: "داشبورد", icon: LayoutDashboard },
     { href: `/dashboard/pos${qs}`, label: "صندوق", icon: ShoppingCart },
     { href: `/dashboard/orders${qs}`, label: "سفارش‌ها", icon: Receipt },
     { href: `/dashboard/products${qs}`, label: "محصولات", icon: Package },
   ];
+
+  const cashierMobileMenuItems = [
+    { href: `/dashboard/pos${qs}`, label: "صندوق", icon: ShoppingCart },
+  ];
+
+  const mobileMenuItems =
+    access === "cashier" ? cashierMobileMenuItems : ownerMobileMenuItems;
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -114,6 +158,14 @@ export default function DashboardLayout({
   const isActive = (href: string) => {
     return pathname === href.split("?")[0];
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F7F6F3] flex items-center justify-center">
+        <div className="text-navy/50">در حال بارگذاری...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F7F6F3] font-[Vazirmatn] flex" dir="rtl">
