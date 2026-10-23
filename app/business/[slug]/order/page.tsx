@@ -65,6 +65,7 @@ export default function OrderPage({
   }, [params]);
 
   useEffect(() => {
+    // خواندن کد از URL (مثلاً ?code=T12)
     const codeFromUrl = searchParams.get("code");
     if (codeFromUrl) {
       setAccessCode(codeFromUrl.toUpperCase());
@@ -195,7 +196,7 @@ export default function OrderPage({
       customerName,
       customerPhone,
       customerNote,
-      tableNo: tableNumber,
+      tableNumber,
       total: totalPrice,
       website: honeypot,
       orderCode: accessCode || undefined,
