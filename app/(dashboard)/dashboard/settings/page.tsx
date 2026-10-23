@@ -2,6 +2,7 @@
 import { SettingsClient } from "./SettingsClient";
 import { getDashboardContext } from "@/lib/dashboard-context";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function SettingsPage({
   searchParams,
@@ -18,44 +19,37 @@ export default async function SettingsPage({
   }
   if (!ctx.business) redirect("/dashboard/onboarding");
 
-  const supabase = await createClient();
-  const business = ctx.business;
+  const businessId = ctx.business.id;
 
-  const { data: fullBusiness } = await supabase
+  // ادمین: bypass RLS فقط بعد از احراز نقش
+  // مالک: همان session + RLS owner
+  const db =
+    ctx.access === "admin" ? createAdminClient() : await createClient();
+
+  const { data: fullBusiness } = await db
     .from("businesses")
     .select("*")
-    .eq("id", business.id)
+    .eq("id", businessId)
     .single();
 
   if (!fullBusiness) {
     redirect("/dashboard/onboarding");
   }
 
-  const { data: staffRows } = await supabase
+  const { data: staffRows, error: staffError } = await db
     .from("business_staff")
     .select("id, user_id, email, is_active, role")
-    .eq("business_id", business.id)
+    .eq("business_id", businessId)
     .eq("role", "cashier")
     .eq("is_active", true)
     .order("created_at", { ascending: false })
     .limit(1);
 
-  const staff = staffRows?.[0] ?? null;
-
-  let cashierEmail: string | null = null;
-
-  if (staff) {
-    if (staff.email) {
-      cashierEmail = staff.email;
-    } else {
-      const { data: cashierProfile } = await supabase
-        .from("profiles")
-        .select("email")
-        .eq("id", staff.user_id)
-        .maybeSingle();
-      cashierEmail = cashierProfile?.email ?? null;
-    }
+  if (staffError) {
+    console.error("[settings] staff", staffError.message);
   }
+
+  const cashierEmail = staffRows?.[0]?.email ?? null;
 
   return (
     <SettingsClient
